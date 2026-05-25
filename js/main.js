@@ -6,6 +6,9 @@ document.addEventListener('keydown', (e) => {
     if ((e.keyCode === SPACE || e.keyCode === UP) && game && game.state === 'playing') {
       game.player.jump();
     }
+    if (e.keyCode === R_KEY && game && (game.state === 'gameover' || game.state === 'win')) {
+      game.reset();
+    }
   }
   keys[e.keyCode] = true;
   if (e.keyCode === SPACE || e.keyCode === UP) e.preventDefault();

@@ -17,7 +17,6 @@ class Game {
     this.camera = { x: 0, y: 0 };
     this.score = 0;
     this.state = 'playing';
-    this.restartTimer = 0;
 
     this.hudWidth = CANVAS_WIDTH;
   }
@@ -35,12 +34,12 @@ class Game {
     this.state = 'playing';
   }
 
+  get coinsCollected() {
+    return this.coins.filter(c => c.collected).length;
+  }
+
   update(dt) {
     if (this.state === 'gameover' || this.state === 'win') {
-      this.restartTimer += dt;
-      if (this.restartTimer > 2) {
-        if (keys[R_KEY]) this.reset();
-      }
       return;
     }
 
@@ -61,12 +60,10 @@ class Game {
 
     if (this.player.x > this.level.goalX) {
       this.state = 'win';
-      this.restartTimer = 0;
     }
 
-    if (!this.player.alive && this.player.y > CANVAS_HEIGHT + 100) {
+    if (!this.player.alive && this.player.y > GROUND_Y * TILE + 300) {
       this.state = 'gameover';
-      this.restartTimer = 0;
     }
   }
 
@@ -75,65 +72,66 @@ class Game {
     const pb = p.getBounds();
     p.onGround = false;
 
-    for (const plat of this.level.platforms) {
-      if (pb.x + pb.w > plat.x && pb.x < plat.x + plat.w) {
-        const overlapTop = (pb.y + pb.h) - plat.y;
-        const overlapBottom = (plat.y + plat.h) - pb.y;
-        const overlapLeft = (pb.x + pb.w) - plat.x;
-        const overlapRight = (plat.x + plat.w) - pb.x;
+    if (p.alive) {
+      if (p.x < 0) { p.x = 0; p.vx = 0; }
 
-        const minOverlap = Math.min(overlapTop, overlapBottom, overlapLeft, overlapRight);
+      for (const plat of this.level.platforms) {
+        if (pb.x + pb.w > plat.x && pb.x < plat.x + plat.w) {
+          const overlapTop = (pb.y + pb.h) - plat.y;
+          const overlapBottom = (plat.y + plat.h) - pb.y;
+          const overlapLeft = (pb.x + pb.w) - plat.x;
+          const overlapRight = (plat.x + plat.w) - pb.x;
 
-        if (minOverlap === overlapTop && p.vy >= 0) {
-          p.y = plat.y - p.h;
-          p.vy = 0;
-          p.onGround = true;
-        } else if (minOverlap === overlapBottom && p.vy < 0) {
-          p.y = plat.y + plat.h;
-          p.vy = 0;
-        } else if (minOverlap === overlapLeft) {
-          p.x = plat.x + plat.w;
-          p.vx = 0;
-        } else if (minOverlap === overlapRight) {
-          p.x = plat.x - pb.w - 6;
-          p.vx = 0;
-        }
-      }
-    }
+          const minOverlap = Math.min(overlapTop, overlapBottom, overlapLeft, overlapRight);
 
-    const pBounds = p.getBounds();
-
-    for (const e of this.enemies) {
-      if (!e.alive) continue;
-      const eb = e.getBounds();
-
-      if (pBounds.x < eb.x + eb.w && pBounds.x + pBounds.w > eb.x &&
-          pBounds.y < eb.y + eb.h && pBounds.y + pBounds.h > eb.y) {
-
-        const fromAbove = p.vy > 0 && pBounds.y + pBounds.h - 10 <= eb.y + 10;
-
-        if (fromAbove && !e.squished) {
-          e.stomp();
-          p.vy = JUMP_FORCE * 0.6;
-          this.score += 100;
-        } else if (!e.squished) {
-          if (p.die()) {
-            this.score = Math.max(0, this.score - 50);
-            setTimeout(() => {
-              if (this.state === 'playing') this.state = 'gameover';
-            }, 1000);
+          if (minOverlap === overlapTop && p.vy >= 0) {
+            p.y = plat.y - p.h;
+            p.vy = 0;
+            p.onGround = true;
+          } else if (minOverlap === overlapBottom && p.vy < 0) {
+            p.y = plat.y + plat.h;
+            p.vy = 0;
+          } else if (minOverlap === overlapLeft) {
+            p.x = plat.x + plat.w;
+            p.vx = 0;
+          } else if (minOverlap === overlapRight) {
+            p.x = plat.x - pb.w - 6;
+            p.vx = 0;
           }
         }
       }
-    }
 
-    for (const c of this.coins) {
-      if (c.collected) continue;
-      const dx = p.x + p.w / 2 - (c.x + TILE / 2);
-      const dy = p.y + p.h / 2 - (c.y + TILE / 2);
-      if (Math.abs(dx) < TILE && Math.abs(dy) < TILE) {
-        c.collected = true;
-        this.score += 50;
+      const pBounds = p.getBounds();
+
+      for (const e of this.enemies) {
+        if (!e.alive) continue;
+        const eb = e.getBounds();
+
+        if (pBounds.x < eb.x + eb.w && pBounds.x + pBounds.w > eb.x &&
+            pBounds.y < eb.y + eb.h && pBounds.y + pBounds.h > eb.y) {
+
+          const fromAbove = p.vy > 0 && pBounds.y + pBounds.h - 10 <= eb.y + 10;
+
+          if (fromAbove && !e.squished) {
+            e.stomp();
+            p.vy = JUMP_FORCE * 0.6;
+            this.score += 100;
+          } else if (!e.squished) {
+            if (p.die()) {
+              this.score = Math.max(0, this.score - 50);
+            }
+          }
+        }
+      }
+
+      for (const c of this.coins) {
+        if (c.collected) continue;
+        const dx = p.x + p.w / 2 - (c.x + TILE / 2);
+        const dy = p.y + p.h / 2 - (c.y + TILE / 2);
+        if (Math.abs(dx) < TILE && Math.abs(dy) < TILE) {
+          c.collected = true;
+          this.score += 50;
+        }
       }
     }
 
@@ -190,7 +188,7 @@ class Game {
     ctx.fillText('SCORE: ' + this.score, 20, 28);
 
     ctx.textAlign = 'right';
-    ctx.fillText('COINS: ' + this.coins.filter(c => c.collected).length + '/' + this.coins.length, CANVAS_WIDTH - 20, 28);
+    ctx.fillText('COINS: ' + this.coinsCollected + '/' + this.coins.length, CANVAS_WIDTH - 20, 28);
 
     ctx.fillStyle = '#4ecca3';
     ctx.font = '14px monospace';

@@ -22,7 +22,13 @@ class Player {
   }
 
   update(dt) {
-    if (!this.alive) return;
+    if (!this.alive) {
+      this.vy += GRAVITY;
+      if (this.vy > MAX_FALL) this.vy = MAX_FALL;
+      this.x += this.vx;
+      this.y += this.vy;
+      return;
+    }
 
     this.animTimer += dt;
     const anim = ANIMATIONS[this.state] || ANIMATIONS.idle;
