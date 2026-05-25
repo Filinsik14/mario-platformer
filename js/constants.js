@@ -9,10 +9,10 @@ const CHAR_SRC = 24;
 const CHAR_SCALE = 3;
 const CHAR = CHAR_SRC * CHAR_SCALE;
 
-const GRAVITY = 0.55;
-const JUMP_FORCE = -15;
+const GRAVITY = 0.35;
+const JUMP_FORCE = -13;
 const MOVE_SPEED = 4.5;
-const MAX_FALL = 13;
+const MAX_FALL = 10;
 
 const GROUND_Y = 10;
 
@@ -24,12 +24,7 @@ const R_KEY = 82;
 const ENTER_KEY = 13;
 
 function packedFrame(col, row, size) {
-  return {
-    sx: col * size,
-    sy: row * size,
-    sw: size,
-    sh: size
-  };
+  return { sx: col * size, sy: row * size, sw: size, sh: size };
 }
 
 function tileFrame(col, row) {
@@ -40,20 +35,11 @@ function charFrame(col, row) {
   return packedFrame(col, row, CHAR_SRC);
 }
 
-const ANIMATIONS = {
-  idle: {
-    frames: [charFrame(0, 0), charFrame(1, 0)],
-    speed: 4
-  },
-  run: {
-    frames: [charFrame(2, 0), charFrame(3, 0), charFrame(4, 0), charFrame(5, 0)],
-    speed: 10
-  },
-  jump: {
-    frames: [charFrame(6, 0), charFrame(7, 0)],
-    speed: 3
-  }
-};
+const ANIM_IDLE = [charFrame(0, 0), charFrame(1, 0)];
+const ANIM_RUN = [charFrame(2, 0), charFrame(3, 0), charFrame(4, 0), charFrame(5, 0)];
+const ANIM_JUMP_UP = charFrame(6, 0);
+const ANIM_JUMP_DOWN = charFrame(7, 0);
+const ANIM_DEATH = charFrame(8, 0);
 
 const ENEMY_SPRITES = [
   charFrame(0, 2),

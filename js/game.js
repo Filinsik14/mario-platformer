@@ -6,6 +6,7 @@ class Game {
     this.tileSheet = tileSheet;
     this.currentLevel = 0;
     this.score = 0;
+    this.coinEffects = [];
     this.startLevel();
   }
 
@@ -19,6 +20,7 @@ class Game {
     this.camera = { x: 0, y: 0 };
     this.state = 'playing';
     this.transitionTimer = 0;
+    this.coinEffects = [];
   }
 
   reset() {
@@ -30,11 +32,13 @@ class Game {
   }
 
   update(dt) {
-    if (this.state === 'gameover') {
+    if (this.state === 'gameover' || this.state === 'win') {
+      this.updateCoinEffects(dt);
       return;
     }
     if (this.state === 'levelComplete') {
       this.transitionTimer += dt;
+      this.updateCoinEffects(dt);
       if (this.transitionTimer > 1.5) {
         this.currentLevel++;
         if (this.currentLevel >= TOTAL_LEVELS) {
@@ -46,9 +50,6 @@ class Game {
       }
       return;
     }
-    if (this.state === 'win') {
-      return;
-    }
 
     this.player.update(dt);
     for (const e of this.enemies) {
@@ -57,6 +58,7 @@ class Game {
 
     this.handleCollisions();
     this.updateCamera();
+    this.updateCoinEffects(dt);
 
     if (this.player.x > this.level.goalX) {
       if (this.currentLevel < TOTAL_LEVELS - 1) {
@@ -106,16 +108,13 @@ class Game {
         }
       }
 
-      const pBounds = p.getBounds();
-
       for (const e of this.enemies) {
         if (!e.alive) continue;
         const eb = e.getBounds();
 
-        if (pBounds.x < eb.x + eb.w && pBounds.x + pBounds.w > eb.x &&
-            pBounds.y < eb.y + eb.h && pBounds.y + pBounds.h > eb.y) {
-
-          const fromAbove = p.vy > 0 && pBounds.y + pBounds.h - 10 <= eb.y + 10;
+        if (pb.x < eb.x + eb.w && pb.x + pb.w > eb.x &&
+            pb.y < eb.y + eb.h && pb.y + pb.h > eb.y) {
+          const fromAbove = p.vy > 0 && pb.y + pb.h - 10 <= eb.y + 10;
 
           if (fromAbove && !e.squished) {
             e.stomp();
@@ -136,6 +135,34 @@ class Game {
         if (Math.abs(dx) < TILE && Math.abs(dy) < TILE) {
           c.collected = true;
           this.score += 50;
+          this.coinEffects.push({ x: c.x, y: c.y, timer: 1 });
+        }
+      }
+    }
+
+    for (const e of this.enemies) {
+      if (!e.alive || e.squished) continue;
+      e.onGround = false;
+      const eb = e.getBounds();
+      for (const plat of this.level.platforms) {
+        if (eb.x + eb.w > plat.x && eb.x < plat.x + plat.w) {
+          const overlapTop = (eb.y + eb.h) - plat.y;
+          const overlapBottom = (plat.y + plat.h) - eb.y;
+          const overlapLeft = (eb.x + eb.w) - plat.x;
+          const overlapRight = (plat.x + plat.w) - eb.x;
+
+          const minOverlap = Math.min(overlapTop, overlapBottom, overlapLeft, overlapRight);
+
+          if (minOverlap === overlapTop && e.vy >= 0) {
+            e.y = plat.y - e.h;
+            e.vy = 0;
+            e.onGround = true;
+          } else if (minOverlap === overlapBottom && e.vy < 0) {
+            e.y = plat.y + plat.h;
+            e.vy = 0;
+          } else if (minOverlap === overlapLeft || minOverlap === overlapRight) {
+            e.vx = -e.vx;
+          }
         }
       }
     }
@@ -143,6 +170,15 @@ class Game {
     if (p.y > CANVAS_HEIGHT + 200) {
       if (p.alive) p.die();
       this.state = 'gameover';
+    }
+  }
+
+  updateCoinEffects(dt) {
+    for (let i = this.coinEffects.length - 1; i >= 0; i--) {
+      this.coinEffects[i].timer -= dt;
+      if (this.coinEffects[i].timer <= 0) {
+        this.coinEffects.splice(i, 1);
+      }
     }
   }
 
@@ -171,6 +207,7 @@ class Game {
 
     this.level.drawFlag(ctx, this.tileSheet, this.camera.x);
     this.player.draw(ctx, this.charSheet, this.camera.x, this.camera.y);
+    this.drawCoinEffects(ctx);
     this.drawHUD(ctx);
 
     if (this.state === 'gameover') {
@@ -179,6 +216,25 @@ class Game {
       this.drawOverlay(ctx, 'LEVEL ' + (this.currentLevel + 1) + ' COMPLETE!', '#4ecca3', 'Get ready for next level...');
     } else if (this.state === 'win') {
       this.drawOverlay(ctx, 'YOU WIN!', '#f1c40f', 'Press R to play again');
+    }
+  }
+
+  drawCoinEffects(ctx) {
+    for (const e of this.coinEffects) {
+      const alpha = Math.min(e.timer * 2, 1);
+      const offsetY = (1 - e.timer) * 60;
+
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = '#f1c40f';
+      ctx.font = 'bold 20px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(
+        '+50',
+        Math.round(e.x - this.camera.x),
+        Math.round(e.y - this.camera.y - offsetY)
+      );
+      ctx.restore();
     }
   }
 

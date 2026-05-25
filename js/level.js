@@ -198,10 +198,12 @@ class Level {
 
   drawCoins(ctx, tilesheet, camX, coins) {
     const coinTile = TILE_COIN;
+    const t = performance.now() / 300;
     for (const c of coins) {
       if (c.collected) continue;
       const drawX = Math.round(c.x - TILE / 2 - camX);
-      const drawY = Math.round(c.y - TILE / 2);
+      const bob = Math.sin(t + c.x * 0.1) * 4;
+      const drawY = Math.round(c.y - TILE / 2 + bob);
       if (drawX > -TILE && drawX < CANVAS_WIDTH + TILE) {
         ctx.drawImage(
           tilesheet, coinTile.sx, coinTile.sy, coinTile.sw, coinTile.sh,

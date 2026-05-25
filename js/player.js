@@ -17,12 +17,11 @@ class Player {
   }
 
   getFrame() {
-    const anim = ANIMATIONS[this.state] || ANIMATIONS.idle;
     if (this.state === 'jump') {
-      if (this.vy < 0) return anim.frames[0];
-      return anim.frames[anim.frames.length - 1];
+      return this.vy < 0 ? ANIM_JUMP_UP : ANIM_JUMP_DOWN;
     }
-    return anim.frames[this.animFrame % anim.frames.length];
+    const frames = this.state === 'run' ? ANIM_RUN : ANIM_IDLE;
+    return frames[this.animFrame % frames.length];
   }
 
   update(dt) {
@@ -36,24 +35,29 @@ class Player {
 
     const prevState = this.state;
 
-    let newState = this.state;
-    if (!this.alive) newState = 'dead';
-    else if (this.vy < 0) newState = 'jump';
-    else if (!this.onGround) newState = 'jump';
-    else if (Math.abs(this.vx) > 0.5) newState = 'run';
-    else newState = 'idle';
+    if (!this.alive) {
+      this.state = 'dead';
+    } else if (!this.onGround) {
+      this.state = 'jump';
+    } else if (Math.abs(this.vx) > 0.5) {
+      this.state = 'run';
+    } else {
+      this.state = 'idle';
+    }
 
-    if (newState !== this.state) {
-      this.state = newState;
+    if (this.state !== prevState) {
       this.animFrame = 0;
       this.animTimer = 0;
     }
 
     this.animTimer += dt;
-    const anim = ANIMATIONS[this.state] || ANIMATIONS.idle;
-    if (this.state !== 'jump' && this.animTimer >= 1 / anim.speed) {
-      this.animTimer -= 1 / anim.speed;
-      this.animFrame++;
+    if (this.state !== 'jump') {
+      const frames = this.state === 'run' ? ANIM_RUN : ANIM_IDLE;
+      const speed = this.state === 'run' ? 10 : 4;
+      if (this.animTimer >= 1 / speed) {
+        this.animTimer -= 1 / speed;
+        this.animFrame++;
+      }
     }
 
     this.vy += GRAVITY;
@@ -99,7 +103,7 @@ class Player {
 
   draw(ctx, spritesheet, camX, camY) {
     if (!this.alive) {
-      const f = charFrame(8, 0);
+      const f = ANIM_DEATH;
       ctx.drawImage(
         spritesheet, f.sx, f.sy, f.sw, f.sh,
         Math.round(this.x - camX), Math.round(this.y - camY), this.w, this.h
