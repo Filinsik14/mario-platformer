@@ -83,12 +83,11 @@ class Game {
         const overlapLeft = (xb.x + xb.w) - plat.x;
         const overlapRight = (plat.x + plat.w) - xb.x;
         if (overlapLeft < overlapRight) {
-          p.x = plat.x - xb.w - 6;
-          p.vx = 0;
+          p.x -= overlapLeft;
         } else {
-          p.x = plat.x + plat.w;
-          p.vx = 0;
+          p.x += overlapRight;
         }
+        p.vx = 0;
         xb = p.getBounds();
       }
     }
