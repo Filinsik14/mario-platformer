@@ -18,6 +18,10 @@ class Player {
 
   getFrame() {
     const anim = ANIMATIONS[this.state] || ANIMATIONS.idle;
+    if (this.state === 'jump') {
+      if (this.vy < 0) return anim.frames[0];
+      return anim.frames[anim.frames.length - 1];
+    }
     return anim.frames[this.animFrame % anim.frames.length];
   }
 
@@ -30,24 +34,26 @@ class Player {
       return;
     }
 
-    this.animTimer += dt;
-    const anim = ANIMATIONS[this.state] || ANIMATIONS.idle;
-    if (this.animTimer >= 1 / anim.speed) {
-      this.animTimer -= 1 / anim.speed;
-      this.animFrame++;
+    const prevState = this.state;
+
+    let newState = this.state;
+    if (!this.alive) newState = 'dead';
+    else if (this.vy < 0) newState = 'jump';
+    else if (!this.onGround) newState = 'jump';
+    else if (Math.abs(this.vx) > 0.5) newState = 'run';
+    else newState = 'idle';
+
+    if (newState !== this.state) {
+      this.state = newState;
+      this.animFrame = 0;
+      this.animTimer = 0;
     }
 
-    if (this.vy < 0) {
-      this.state = 'jump';
-    } else if (!this.onGround) {
-      this.state = 'jump';
-      if (this.animFrame >= anim.frames.length) {
-        this.animFrame = anim.frames.length - 1;
-      }
-    } else if (Math.abs(this.vx) > 0.5) {
-      this.state = 'run';
-    } else {
-      this.state = 'idle';
+    this.animTimer += dt;
+    const anim = ANIMATIONS[this.state] || ANIMATIONS.idle;
+    if (this.state !== 'jump' && this.animTimer >= 1 / anim.speed) {
+      this.animTimer -= 1 / anim.speed;
+      this.animFrame++;
     }
 
     this.vy += GRAVITY;

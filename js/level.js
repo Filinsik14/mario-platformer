@@ -1,124 +1,177 @@
 class Level {
-  constructor() {
+  constructor(levelNum) {
+    this.levelNum = levelNum;
     this.platforms = [];
     this.enemies = [];
     this.coins = [];
     this.flagX = 0;
     this.goalX = 0;
+    this.worldTiles = 60;
     this.build();
   }
 
-  build() {
-    const groundY = GROUND_Y * TILE;
-
-    for (let i = 0; i < WORLD_TILES; i++) {
-      if ((i >= 28 && i <= 30) || (i >= 55 && i <= 57) || (i >= 82 && i <= 84)) continue;
-      this.platforms.push({
-        x: i * TILE, y: groundY, w: TILE, h: TILE * 2,
-        type: i % 2 === 0 ? 'groundTop' : 'groundInner'
-      });
-    }
-
-    const plat1 = { x: 12 * TILE, y: groundY - 4 * TILE, w: 4 * TILE, h: TILE, type: 'platform' };
-    const plat2 = { x: 22 * TILE, y: groundY - 3 * TILE, w: 3 * TILE, h: TILE, type: 'platform' };
-    const plat3 = { x: 35 * TILE, y: groundY - 5 * TILE, w: 5 * TILE, h: TILE, type: 'platform' };
-    const plat4 = { x: 45 * TILE, y: groundY - 3 * TILE, w: 3 * TILE, h: TILE, type: 'platform' };
-    const plat5 = { x: 50 * TILE, y: groundY - 4 * TILE, w: 4 * TILE, h: TILE, type: 'platform' };
-    const plat6 = { x: 65 * TILE, y: groundY - 3 * TILE, w: 3 * TILE, h: TILE, type: 'platform' };
-    const plat7 = { x: 72 * TILE, y: groundY - 5 * TILE, w: 4 * TILE, h: TILE, type: 'platform' };
-    const plat8 = { x: 85 * TILE, y: groundY - 3 * TILE, w: 3 * TILE, h: TILE, type: 'platform' };
-    const plat9 = { x: 95 * TILE, y: groundY - 4 * TILE, w: 5 * TILE, h: TILE, type: 'platform' };
-
-    this.platforms.push(plat1, plat2, plat3, plat4, plat5, plat6, plat7, plat8, plat9);
-
-    this.enemies = [
-      { x: 14 * TILE, y: groundY - CHAR, patrolMin: 10 * TILE, patrolMax: 18 * TILE },
-      { x: 38 * TILE, y: groundY - CHAR, patrolMin: 34 * TILE, patrolMax: 42 * TILE },
-      { x: 60 * TILE, y: groundY - CHAR, patrolMin: 56 * TILE, patrolMax: 64 * TILE },
-      { x: 75 * TILE, y: groundY - CHAR, patrolMin: 72 * TILE, patrolMax: 80 * TILE },
-      { x: 100 * TILE, y: groundY - CHAR, patrolMin: 96 * TILE, patrolMax: 105 * TILE }
-    ];
-
-    this.coins = [
-      { x: 260, y: groundY - 3 * TILE },
-      { x: 320, y: groundY - 3 * TILE },
-      { x: 500, y: groundY - 3 * TILE },
-      { x: 580, y: groundY - 3 * TILE },
-      { x: 660, y: groundY - 3 * TILE },
-      { x: 12 * TILE + TILE, y: groundY - 6 * TILE },
-      { x: 12 * TILE + 3 * TILE, y: groundY - 6 * TILE },
-      { x: 22 * TILE + TILE, y: groundY - 5 * TILE },
-      { x: 35 * TILE + TILE, y: groundY - 7 * TILE },
-      { x: 35 * TILE + 3 * TILE, y: groundY - 7 * TILE },
-      { x: 45 * TILE + TILE, y: groundY - 5 * TILE },
-      { x: 50 * TILE + TILE, y: groundY - 6 * TILE },
-      { x: 50 * TILE + 3 * TILE, y: groundY - 6 * TILE },
-      { x: 65 * TILE + TILE, y: groundY - 5 * TILE },
-      { x: 72 * TILE + TILE, y: groundY - 7 * TILE },
-      { x: 72 * TILE + 3 * TILE, y: groundY - 7 * TILE },
-      { x: 85 * TILE + TILE, y: groundY - 5 * TILE },
-      { x: 95 * TILE + TILE, y: groundY - 6 * TILE },
-      { x: 95 * TILE + 3 * TILE, y: groundY - 6 * TILE },
-      { x: 105 * TILE, y: groundY - 4 * TILE }
-    ];
-
-    this.flagX = (WORLD_TILES - 3) * TILE;
-    this.goalX = this.flagX;
-  }
-
-  getSolidAt(x, y, w, h) {
-    const margin = 2;
-    for (const p of this.platforms) {
-      if (
-        x + w - margin > p.x && x + margin < p.x + p.w &&
-        y + h > p.y && y < p.y + p.h
-      ) {
-        return p;
+  addGround(segments, y) {
+    for (const s of segments) {
+      for (let i = s[0]; i < s[1]; i++) {
+        this.platforms.push({
+          x: i * TILE, y, w: TILE, h: TILE * 2,
+          type: i % 2 === 0 ? 'groundTop' : 'groundInner'
+        });
       }
     }
-    return null;
+  }
+
+  addPlat(tileX, tileY, width) {
+    const y = GROUND_Y * TILE - tileY * TILE;
+    this.platforms.push({
+      x: tileX * TILE, y, w: width * TILE, h: TILE, type: 'platform'
+    });
+    return { x: tileX * TILE, y, w: width * TILE };
+  }
+
+  addCoin(tileX, tileY) {
+    const y = GROUND_Y * TILE - tileY * TILE;
+    this.coins.push({ x: tileX * TILE + TILE / 2, y: y + TILE / 2 });
+  }
+
+  addEnemy(tileX, patrolMin, patrolMax) {
+    const y = GROUND_Y * TILE - CHAR;
+    this.enemies.push({
+      x: tileX * TILE, y, patrolMin: patrolMin * TILE, patrolMax: patrolMax * TILE
+    });
+  }
+
+  setGoal(tileX) {
+    this.flagX = tileX * TILE;
+    this.goalX = this.flagX;
+    this.worldTiles = tileX + 4;
+  }
+
+  build() {
+    const gY = GROUND_Y * TILE;
+
+    if (this.levelNum === 0) {
+      this.buildLevel1(gY);
+    } else if (this.levelNum === 1) {
+      this.buildLevel2(gY);
+    } else {
+      this.buildLevel3(gY);
+    }
+  }
+
+  buildLevel1(gY) {
+    this.addGround([[0, 26], [31, 50]], gY);
+    this.addPlat(8, 3, 3);
+    this.addPlat(16, 2, 2);
+    this.addPlat(24, 3, 3);
+    this.addPlat(35, 2, 4);
+    this.addPlat(44, 3, 2);
+
+    this.addCoin(9, 4);
+    this.addCoin(10, 4);
+    this.addCoin(45, 4);
+
+    this.addEnemy(12, 8, 16);
+    this.addEnemy(38, 35, 42);
+
+    this.setGoal(54);
+  }
+
+  buildLevel2(gY) {
+    this.addGround([[0, 23], [28, 52], [57, 75]], gY);
+    this.addPlat(6, 3, 3);
+    this.addPlat(14, 4, 2);
+    this.addPlat(22, 2, 2);
+    this.addPlat(30, 4, 3);
+    this.addPlat(38, 3, 3);
+    this.addPlat(46, 4, 2);
+    this.addPlat(55, 3, 3);
+    this.addPlat(64, 2, 3);
+
+    this.addCoin(7, 4);
+    this.addCoin(31, 5);
+    this.addCoin(47, 5);
+
+    this.addEnemy(10, 6, 16);
+    this.addEnemy(35, 30, 40);
+    this.addEnemy(50, 46, 55);
+
+    this.setGoal(78);
+  }
+
+  buildLevel3(gY) {
+    this.addGround([[0, 18], [23, 42], [47, 72], [77, 90]], gY);
+    this.addPlat(5, 3, 2);
+    this.addPlat(12, 5, 2);
+    this.addPlat(20, 3, 2);
+    this.addPlat(27, 4, 3);
+    this.addPlat(35, 5, 2);
+    this.addPlat(40, 3, 2);
+    this.addPlat(50, 4, 3);
+    this.addPlat(58, 5, 2);
+    this.addPlat(65, 3, 2);
+    this.addPlat(75, 4, 3);
+    this.addPlat(82, 3, 2);
+    this.addPlat(88, 2, 3);
+
+    this.addCoin(13, 6);
+    this.addCoin(36, 6);
+    this.addCoin(59, 6);
+
+    this.addEnemy(8, 5, 14);
+    this.addEnemy(25, 23, 30);
+    this.addEnemy(38, 35, 42);
+    this.addEnemy(53, 50, 60);
+    this.addEnemy(80, 75, 85);
+
+    this.setGoal(93);
   }
 
   drawBackground(ctx, camX) {
     const skyGrad = ctx.createLinearGradient(0, 0, 0, CANVAS_HEIGHT);
-    skyGrad.addColorStop(0, '#4dc9f6');
-    skyGrad.addColorStop(0.6, '#87ceeb');
-    skyGrad.addColorStop(1, '#b0e0e6');
+    if (this.levelNum === 0) {
+      skyGrad.addColorStop(0, '#4dc9f6');
+      skyGrad.addColorStop(0.6, '#87ceeb');
+      skyGrad.addColorStop(1, '#b0e0e6');
+    } else if (this.levelNum === 1) {
+      skyGrad.addColorStop(0, '#2c3e50');
+      skyGrad.addColorStop(0.6, '#34495e');
+      skyGrad.addColorStop(1, '#5d6d7e');
+    } else {
+      skyGrad.addColorStop(0, '#1a0a2e');
+      skyGrad.addColorStop(0.5, '#2d1b69');
+      skyGrad.addColorStop(1, '#4a2c8a');
+    }
     ctx.fillStyle = skyGrad;
     ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
-    const cloudX = (0.1 * camX) % CANVAS_WIDTH;
-    ctx.fillStyle = 'rgba(255,255,255,0.8)';
-    for (let i = -1; i < 3; i++) {
-      const cx = i * CANVAS_WIDTH + cloudX;
-      ctx.beginPath();
-      ctx.arc(cx, 60, 40, 0, Math.PI * 2);
-      ctx.arc(cx + 30, 45, 30, 0, Math.PI * 2);
-      ctx.arc(cx + 60, 55, 35, 0, Math.PI * 2);
-      ctx.fill();
-    }
-
-    for (let i = -1; i < 3; i++) {
-      const cx = i * CANVAS_WIDTH + (CANVAS_WIDTH * 0.3 + cloudX * 0.7) % CANVAS_WIDTH;
-      ctx.beginPath();
-      ctx.arc(cx + 200, 120, 25, 0, Math.PI * 2);
-      ctx.arc(cx + 220, 110, 20, 0, Math.PI * 2);
-      ctx.arc(cx + 240, 115, 22, 0, Math.PI * 2);
-      ctx.fill();
-    }
-
-    const distMountains = [
-      80, 120, 240, 180, 300, 200, 350, 150, 280, 320, 190, 260, 310, 170, 290
-    ];
-    ctx.fillStyle = 'rgba(100,160,180,0.3)';
-    for (let i = 0; i < distMountains.length; i++) {
-      const baseX = (i * 250 - camX * 0.2) % (CANVAS_WIDTH * 2);
-      const h = distMountains[i];
-      ctx.beginPath();
-      ctx.moveTo(baseX, CANVAS_HEIGHT);
-      ctx.lineTo(baseX + 80, CANVAS_HEIGHT - h);
-      ctx.lineTo(baseX + 160, CANVAS_HEIGHT);
-      ctx.fill();
+    if (this.levelNum === 0) {
+      const cloudX = (0.1 * camX) % CANVAS_WIDTH;
+      ctx.fillStyle = 'rgba(255,255,255,0.8)';
+      for (let i = -1; i < 3; i++) {
+        const cx = i * CANVAS_WIDTH + cloudX;
+        ctx.beginPath();
+        ctx.arc(cx, 60, 40, 0, Math.PI * 2);
+        ctx.arc(cx + 30, 45, 30, 0, Math.PI * 2);
+        ctx.arc(cx + 60, 55, 35, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    } else if (this.levelNum === 1) {
+      for (let i = 0; i < 8; i++) {
+        const sx = (i * 140 - camX * 0.15) % (CANVAS_WIDTH * 2);
+        ctx.fillStyle = 'rgba(255,255,255,0.05)';
+        ctx.beginPath();
+        ctx.arc(sx, 80 + i * 20, 15 + i * 3, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    } else {
+      for (let i = 0; i < 12; i++) {
+        const sx = (i * 180 - camX * 0.1) % (CANVAS_WIDTH * 2);
+        ctx.fillStyle = 'rgba(255,255,255,0.03)';
+        ctx.beginPath();
+        ctx.arc(sx, 50 + i * 15, 10, 0, Math.PI * 2);
+        ctx.fill();
+      }
     }
   }
 
@@ -144,14 +197,15 @@ class Level {
   }
 
   drawCoins(ctx, tilesheet, camX, coins) {
+    const coinTile = TILE_COIN;
     for (const c of coins) {
-      const drawX = Math.round(c.x - camX);
-      const drawY = Math.round(c.y);
+      if (c.collected) continue;
+      const drawX = Math.round(c.x - TILE / 2 - camX);
+      const drawY = Math.round(c.y - TILE / 2);
       if (drawX > -TILE && drawX < CANVAS_WIDTH + TILE) {
-        const coinTile = TILE_COIN;
         ctx.drawImage(
           tilesheet, coinTile.sx, coinTile.sy, coinTile.sw, coinTile.sh,
-          drawX + 8, drawY + 8, TILE, TILE
+          drawX, drawY, TILE, TILE
         );
       }
     }
@@ -161,6 +215,7 @@ class Level {
     const fx = this.flagX;
     const fy = GROUND_Y * TILE;
     const drawX = Math.round(fx - camX);
+    if (drawX < -TILE * 3 || drawX > CANVAS_WIDTH + TILE) return;
 
     for (let i = 0; i < 8; i++) {
       ctx.fillStyle = '#8B4513';

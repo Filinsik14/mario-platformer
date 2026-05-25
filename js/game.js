@@ -4,34 +4,25 @@ class Game {
     this.ctx = canvas.getContext('2d');
     this.charSheet = charSheet;
     this.tileSheet = tileSheet;
+    this.currentLevel = 0;
+    this.score = 0;
+    this.startLevel();
+  }
 
-    this.level = new Level();
+  startLevel() {
+    this.level = new Level(this.currentLevel);
     this.player = new Player(3 * TILE, GROUND_Y * TILE - CHAR);
     this.enemies = this.level.enemies.map(e =>
       new Enemy(e.x, e.y, e.patrolMin, e.patrolMax)
     );
     this.coins = this.level.coins.map(c => ({ x: c.x, y: c.y, collected: false }));
-    this.coinAnimTimer = 0;
-    this.coinAnimFrame = 0;
-
     this.camera = { x: 0, y: 0 };
-    this.score = 0;
     this.state = 'playing';
-
-    this.hudWidth = CANVAS_WIDTH;
+    this.transitionTimer = 0;
   }
 
   reset() {
-    this.player = new Player(3 * TILE, GROUND_Y * TILE - CHAR);
-    this.enemies = this.level.enemies.map(e =>
-      new Enemy(e.x, e.y, e.patrolMin, e.patrolMax)
-    );
-    this.coins = this.level.coins.map(c => ({ x: c.x, y: c.y, collected: false }));
-    this.coinAnimTimer = 0;
-    this.coinAnimFrame = 0;
-    this.camera = { x: 0, y: 0 };
-    this.score = 0;
-    this.state = 'playing';
+    this.startLevel();
   }
 
   get coinsCollected() {
@@ -39,27 +30,41 @@ class Game {
   }
 
   update(dt) {
-    if (this.state === 'gameover' || this.state === 'win') {
+    if (this.state === 'gameover') {
+      return;
+    }
+    if (this.state === 'levelComplete') {
+      this.transitionTimer += dt;
+      if (this.transitionTimer > 1.5) {
+        this.currentLevel++;
+        if (this.currentLevel >= TOTAL_LEVELS) {
+          this.state = 'win';
+          this.transitionTimer = 0;
+        } else {
+          this.startLevel();
+        }
+      }
+      return;
+    }
+    if (this.state === 'win') {
       return;
     }
 
     this.player.update(dt);
-
     for (const e of this.enemies) {
       if (e.alive) e.update(dt);
-    }
-
-    this.coinAnimTimer += dt;
-    if (this.coinAnimTimer >= 1 / 6) {
-      this.coinAnimTimer -= 1 / 6;
-      this.coinAnimFrame++;
     }
 
     this.handleCollisions();
     this.updateCamera();
 
     if (this.player.x > this.level.goalX) {
-      this.state = 'win';
+      if (this.currentLevel < TOTAL_LEVELS - 1) {
+        this.state = 'levelComplete';
+      } else {
+        this.state = 'win';
+      }
+      this.transitionTimer = 0;
     }
 
     if (!this.player.alive && this.player.y > GROUND_Y * TILE + 300) {
@@ -126,8 +131,8 @@ class Game {
 
       for (const c of this.coins) {
         if (c.collected) continue;
-        const dx = p.x + p.w / 2 - (c.x + TILE / 2);
-        const dy = p.y + p.h / 2 - (c.y + TILE / 2);
+        const dx = p.x + p.w / 2 - c.x;
+        const dy = p.y + p.h / 2 - c.y;
         if (Math.abs(dx) < TILE && Math.abs(dy) < TILE) {
           c.collected = true;
           this.score += 50;
@@ -148,7 +153,8 @@ class Game {
     this.camera.x += (targetX - this.camera.x) * 0.1;
     this.camera.y += (targetY - this.camera.y) * 0.1;
 
-    this.camera.x = Math.max(0, Math.min(this.camera.x, WORLD_PX - CANVAS_WIDTH));
+    const maxCamX = this.level.worldTiles * TILE - CANVAS_WIDTH;
+    this.camera.x = Math.max(0, Math.min(this.camera.x, maxCamX));
     this.camera.y = Math.max(0, Math.min(this.camera.y, 0));
   }
 
@@ -156,9 +162,7 @@ class Game {
     const ctx = this.ctx;
 
     this.level.drawBackground(ctx, this.camera.x);
-
     this.level.drawPlatforms(ctx, this.tileSheet, this.camera.x);
-
     this.level.drawCoins(ctx, this.tileSheet, this.camera.x, this.coins);
 
     for (const e of this.enemies) {
@@ -166,51 +170,57 @@ class Game {
     }
 
     this.level.drawFlag(ctx, this.tileSheet, this.camera.x);
-
     this.player.draw(ctx, this.charSheet, this.camera.x, this.camera.y);
-
     this.drawHUD(ctx);
 
     if (this.state === 'gameover') {
       this.drawOverlay(ctx, 'GAME OVER', '#e94560', 'Press R to restart');
+    } else if (this.state === 'levelComplete') {
+      this.drawOverlay(ctx, 'LEVEL ' + (this.currentLevel + 1) + ' COMPLETE!', '#4ecca3', 'Get ready for next level...');
     } else if (this.state === 'win') {
-      this.drawOverlay(ctx, 'YOU WIN!', '#4ecca3', 'Press R to play again');
+      this.drawOverlay(ctx, 'YOU WIN!', '#f1c40f', 'Press R to play again');
     }
   }
 
   drawHUD(ctx) {
-    ctx.fillStyle = 'rgba(0,0,0,0.5)';
-    ctx.fillRect(0, 0, CANVAS_WIDTH, 40);
+    ctx.fillStyle = 'rgba(0,0,0,0.6)';
+    ctx.fillRect(0, 0, CANVAS_WIDTH, 44);
 
     ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 18px monospace';
+    ctx.font = 'bold 16px monospace';
     ctx.textAlign = 'left';
-    ctx.fillText('SCORE: ' + this.score, 20, 28);
+    ctx.fillText('LEVEL ' + (this.currentLevel + 1) + '/' + TOTAL_LEVELS, 16, 28);
 
-    ctx.textAlign = 'right';
-    ctx.fillText('COINS: ' + this.coinsCollected + '/' + this.coins.length, CANVAS_WIDTH - 20, 28);
-
-    ctx.fillStyle = '#4ecca3';
-    ctx.font = '14px monospace';
     ctx.textAlign = 'center';
-    ctx.fillText('ARROWS: Move  |  SPACE: Jump', CANVAS_WIDTH / 2, 28);
+    ctx.fillText('SCORE: ' + this.score, CANVAS_WIDTH / 2 - 80, 28);
+
+    const coinColor = this.coinsCollected === this.coins.length ? '#f1c40f' : '#ffffff';
+    ctx.fillStyle = coinColor;
+    ctx.textAlign = 'right';
+    ctx.fillText('COINS: ' + this.coinsCollected + '/' + this.coins.length, CANVAS_WIDTH - 16, 28);
   }
 
   drawOverlay(ctx, title, color, sub) {
-    ctx.fillStyle = 'rgba(0,0,0,0.7)';
+    ctx.fillStyle = 'rgba(0,0,0,0.75)';
     ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
     ctx.fillStyle = color;
-    ctx.font = 'bold 64px monospace';
+    ctx.font = 'bold 56px monospace';
     ctx.textAlign = 'center';
-    ctx.fillText(title, CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 - 20);
+    ctx.fillText(title, CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 - 30);
 
     ctx.fillStyle = '#ffffff';
-    ctx.font = '20px monospace';
-    ctx.fillText(sub || '', CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 + 40);
+    ctx.font = '18px monospace';
+    ctx.fillText(sub || '', CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 + 30);
 
     ctx.fillStyle = '#aaaaaa';
     ctx.font = '14px monospace';
-    ctx.fillText('Score: ' + this.score, CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 + 80);
+    ctx.fillText('Score: ' + this.score, CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 + 70);
+
+    if (this.state === 'gameover' || this.state === 'win') {
+      ctx.fillStyle = '#888888';
+      ctx.font = '14px monospace';
+      ctx.fillText('Coins collected: ' + this.coinsCollected + '/' + this.coins.length, CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 + 95);
+    }
   }
 }

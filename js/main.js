@@ -6,8 +6,11 @@ document.addEventListener('keydown', (e) => {
     if ((e.keyCode === SPACE || e.keyCode === UP) && game && game.state === 'playing') {
       game.player.jump();
     }
-    if (e.keyCode === R_KEY && game && (game.state === 'gameover' || game.state === 'win')) {
-      game.reset();
+    if ((e.keyCode === R_KEY || e.keyCode === ENTER_KEY) && game &&
+        (game.state === 'gameover' || game.state === 'win')) {
+      game.currentLevel = 0;
+      game.score = 0;
+      game.startLevel();
     }
   }
   keys[e.keyCode] = true;

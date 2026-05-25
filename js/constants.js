@@ -2,22 +2,17 @@ const CANVAS_WIDTH = 900;
 const CANVAS_HEIGHT = 600;
 
 const TILE_SRC = 18;
-const TILE_GAP = 1;
 const TILE_SCALE = 3;
 const TILE = TILE_SRC * TILE_SCALE;
 
 const CHAR_SRC = 24;
-const CHAR_GAP = 1;
 const CHAR_SCALE = 3;
 const CHAR = CHAR_SRC * CHAR_SCALE;
 
 const GRAVITY = 0.55;
-const JUMP_FORCE = -11;
+const JUMP_FORCE = -15;
 const MOVE_SPEED = 4.5;
 const MAX_FALL = 13;
-
-const WORLD_TILES = 120;
-const WORLD_PX = WORLD_TILES * TILE;
 
 const GROUND_Y = 10;
 
@@ -26,22 +21,23 @@ const LEFT = 37;
 const UP = 38;
 const RIGHT = 39;
 const R_KEY = 82;
+const ENTER_KEY = 13;
 
-function frame(col, row, size, gap) {
+function packedFrame(col, row, size) {
   return {
-    sx: col * (size + gap) + gap,
-    sy: row * (size + gap) + gap,
+    sx: col * size,
+    sy: row * size,
     sw: size,
     sh: size
   };
 }
 
 function tileFrame(col, row) {
-  return frame(col, row, TILE_SRC, TILE_GAP);
+  return packedFrame(col, row, TILE_SRC);
 }
 
 function charFrame(col, row) {
-  return frame(col, row, CHAR_SRC, CHAR_GAP);
+  return packedFrame(col, row, CHAR_SRC);
 }
 
 const ANIMATIONS = {
@@ -67,11 +63,8 @@ const ENEMY_SPRITES = [
 const TILE_GROUND_TOP = tileFrame(0, 0);
 const TILE_GROUND_INNER = tileFrame(1, 0);
 const TILE_PLATFORM = tileFrame(2, 0);
-const TILE_BRICK = tileFrame(3, 0);
 const TILE_COIN = tileFrame(9, 0);
-const TILE_DECO = tileFrame(4, 3);
-const TILE_FLAG_POLE = tileFrame(13, 0);
-const TILE_FLAG_TOP = tileFrame(14, 0);
+
+const TOTAL_LEVELS = 3;
 
 const keys = {};
-let jumpPressed = false;
