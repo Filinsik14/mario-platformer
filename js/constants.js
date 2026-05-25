@@ -9,8 +9,8 @@ const CHAR_SRC = 24;
 const CHAR_SCALE = 3;
 const CHAR = CHAR_SRC * CHAR_SCALE;
 
-const GRAVITY = 0.25;
-const JUMP_FORCE = -13;
+const GRAVITY = 0.22;
+const JUMP_FORCE = -10;
 const MOVE_SPEED = 4.5;
 const MAX_FALL = 8;
 

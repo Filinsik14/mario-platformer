@@ -118,11 +118,11 @@ class Game {
       const eb = e.getBounds();
       if (pb.x < eb.x + eb.w && pb.x + pb.w > eb.x &&
           pb.y < eb.y + eb.h && pb.y + pb.h > eb.y) {
-          const fromAbove = p.vy >= 0 && pb.y + pb.h - 8 <= eb.y + 24;
+          const fromAbove = p.vy > 0 && pb.y + pb.h - 8 <= eb.y + 24;
 
           if (fromAbove && !e.squished) {
             e.stomp();
-            p.vy = JUMP_FORCE * 0.6;
+            p.vy = JUMP_FORCE * 0.8;
             this.score += 100;
           } else if (!e.squished) {
             if (p.die()) this.score = Math.max(0, this.score - 50);
@@ -135,10 +135,10 @@ class Game {
         const bb = this.boss.getBounds();
         if (pb.x < bb.x + bb.w && pb.x + pb.w > bb.x &&
             pb.y < bb.y + bb.h && pb.y + pb.h > bb.y) {
-          const fromAbove = p.vy >= 0 && pb.y + pb.h - 8 <= bb.y + 24;
+          const fromAbove = p.vy > 0 && pb.y + pb.h - 8 <= bb.y + 24;
         if (fromAbove && !this.boss.squished) {
           if (this.boss.stomp()) {
-            p.vy = JUMP_FORCE * 0.6;
+            p.vy = JUMP_FORCE * 0.8;
             this.score += 200;
           }
         } else if (!this.boss.squished) {

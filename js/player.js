@@ -32,12 +32,12 @@ class Player {
       return;
     }
 
-    this.vy += GRAVITY;
-    if (this.vy > MAX_FALL) this.vy = MAX_FALL;
-
-    if (this.state === 'jump' && this.vy < 0 && !keys[SPACE] && !keys[UP]) {
-      this.vy += GRAVITY * 2;
+    if (this.state === 'jump' && this.vy < 0 && (keys[SPACE] || keys[UP])) {
+      this.vy += GRAVITY * 0.55;
+    } else {
+      this.vy += GRAVITY;
     }
+    if (this.vy > MAX_FALL) this.vy = MAX_FALL;
 
     const prevState = this.state;
     if (!this.onGround) {
