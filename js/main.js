@@ -1,3 +1,14 @@
+if (!CanvasRenderingContext2D.prototype.roundRect) {
+  CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, r) {
+    this.moveTo(x + r, y);
+    this.arcTo(x + w, y, x + w, y + h, r);
+    this.arcTo(x + w, y + h, x, y + h, r);
+    this.arcTo(x, y + h, x, y, r);
+    this.arcTo(x, y, x + w, y, r);
+    this.closePath();
+  };
+}
+
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
@@ -26,10 +37,10 @@ canvas.addEventListener('click', (e) => {
   const mx = (e.clientX - rect.left) * (CANVAS_WIDTH / rect.width);
   const my = (e.clientY - rect.top) * (CANVAS_HEIGHT / rect.height);
 
-  const btnW = 140, btnH = 140, gap = 40;
+  const btnW = 160, btnH = 180, gap = 35;
   const totalW = 3 * btnW + 2 * gap;
   const startX = (CANVAS_WIDTH - totalW) / 2;
-  const btnY = 250;
+  const btnY = 200;
 
   for (let i = 0; i < 3; i++) {
     const bx = startX + i * (btnW + gap);

@@ -35,7 +35,7 @@ class Game {
   get coinsCollected() { return this.coins.filter(c => c.collected).length; }
 
   update(dt) {
-    if (this.state === 'gameover' || this.state === 'win') {
+    if (this.state === 'menu' || this.state === 'gameover' || this.state === 'win') {
       this.updateCoinEffects(dt);
       return;
     }
@@ -247,58 +247,102 @@ class Game {
 
   drawMenu(ctx) {
     const levels = [
-      { label: '1', color: '#4ecca3', bg: '#1a3a32' },
-      { label: '2', color: '#e9c46a', bg: '#3a2e1a' },
-      { label: '3', color: '#e94560', bg: '#3a1a24' }
+      { label: '1', color: '#4ecca3', title: 'Forest Plains', desc: 'Learn the basics' },
+      { label: '2', color: '#e9c46a', title: 'Cave Ruins', desc: 'Tricky platforms' },
+      { label: '3', color: '#e94560', title: 'Dark Fortress', desc: 'Face the boss' }
     ];
 
     const sky = ctx.createLinearGradient(0, 0, 0, CANVAS_HEIGHT);
-    sky.addColorStop(0, '#0f0f23');
-    sky.addColorStop(1, '#1a1a3e');
+    sky.addColorStop(0, '#0b0b1a');
+    sky.addColorStop(0.4, '#16163a');
+    sky.addColorStop(1, '#1a0a2e');
     ctx.fillStyle = sky;
     ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
-    ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 42px monospace';
-    ctx.textAlign = 'center';
-    ctx.fillText('PIXEL PLATFORMER', CANVAS_WIDTH / 2, 120);
-
-    ctx.fillStyle = '#8888aa';
-    ctx.font = '20px monospace';
-    ctx.fillText('SELECT LEVEL', CANVAS_WIDTH / 2, 175);
-
-    const btnW = 140;
-    const btnH = 140;
-    const gap = 40;
-    const totalW = levels.length * btnW + (levels.length - 1) * gap;
-    const startX = (CANVAS_WIDTH - totalW) / 2;
-    const btnY = 250;
-
-    for (let i = 0; i < levels.length; i++) {
-      const x = startX + i * (btnW + gap);
-      ctx.fillStyle = levels[i].bg;
-      ctx.fillRect(x, btnY, btnW, btnH);
-      ctx.strokeStyle = levels[i].color;
-      ctx.lineWidth = 3;
-      ctx.strokeRect(x, btnY, btnW, btnH);
-
-      ctx.fillStyle = levels[i].color;
-      ctx.font = 'bold 52px monospace';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(levels[i].label, x + btnW / 2, btnY + btnH / 2);
-      ctx.textBaseline = 'alphabetic';
-
-      ctx.fillStyle = '#aaaaaa';
-      ctx.font = '14px monospace';
-      ctx.textAlign = 'center';
-      ctx.fillText('Level ' + levels[i].label, x + btnW / 2, btnY + btnH + 30);
+    for (let i = 0; i < 50; i++) {
+      const sx = (i * 137 + 42) % CANVAS_WIDTH;
+      const sy = (i * 89 + 17) % CANVAS_HEIGHT;
+      const size = (i % 3) + 1;
+      ctx.fillStyle = 'rgba(255,255,255,' + (0.2 + (i % 5) * 0.12) + ')';
+      ctx.fillRect(sx, sy, size, size);
     }
 
-    ctx.fillStyle = '#666688';
-    ctx.font = '15px monospace';
+    ctx.shadowColor = '#4ecca3';
+    ctx.shadowBlur = 20;
+    ctx.fillStyle = '#4ecca3';
+    ctx.font = 'bold 40px monospace';
     ctx.textAlign = 'center';
-    ctx.fillText('Click a level or press 1 / 2 / 3', CANVAS_WIDTH / 2, CANVAS_HEIGHT - 60);
+    ctx.fillText('PIXEL PLATFORMER', CANVAS_WIDTH / 2, 100);
+    ctx.shadowBlur = 0;
+
+    ctx.fillStyle = '#8888cc';
+    ctx.font = '18px monospace';
+    ctx.fillText('SELECT LEVEL', CANVAS_WIDTH / 2, 145);
+
+    ctx.fillStyle = 'rgba(255,255,255,0.06)';
+    ctx.fillRect(0, 180, CANVAS_WIDTH, 2);
+    ctx.fillRect(0, CANVAS_HEIGHT - 80, CANVAS_WIDTH, 2);
+
+    const btnW = 160;
+    const btnH = 180;
+    const gap = 35;
+    const totalW = 3 * btnW + 2 * gap;
+    const startX = (CANVAS_WIDTH - totalW) / 2;
+    const btnY = 200;
+
+    for (let i = 0; i < 3; i++) {
+      const x = startX + i * (btnW + gap);
+
+      ctx.shadowColor = 'rgba(0,0,0,0.4)';
+      ctx.shadowBlur = 12;
+      ctx.shadowOffsetY = 4;
+
+      const grad = ctx.createLinearGradient(x, btnY, x, btnY + btnH);
+      grad.addColorStop(0, 'rgba(30,30,60,0.9)');
+      grad.addColorStop(1, 'rgba(15,15,35,0.95)');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.roundRect(x, btnY, btnW, btnH, 12);
+      ctx.fill();
+
+      ctx.shadowBlur = 0;
+      ctx.shadowOffsetY = 0;
+
+      ctx.strokeStyle = levels[i].color;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.roundRect(x, btnY, btnW, btnH, 12);
+      ctx.stroke();
+
+      ctx.fillStyle = levels[i].color;
+      ctx.font = 'bold 48px monospace';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(levels[i].label, x + btnW / 2, btnY + 60);
+      ctx.textBaseline = 'alphabetic';
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 14px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(levels[i].title, x + btnW / 2, btnY + 105);
+
+      ctx.fillStyle = '#8888bb';
+      ctx.font = '12px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(levels[i].desc, x + btnW / 2, btnY + 130);
+
+      if (i < 2) {
+        ctx.fillStyle = levels[i].color;
+        ctx.font = '20px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText('►', x + btnW + gap / 2, btnY + 90);
+      }
+    }
+
+    ctx.fillStyle = '#555577';
+    ctx.font = '14px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('Click a level  or  press 1 / 2 / 3', CANVAS_WIDTH / 2, CANVAS_HEIGHT - 45);
   }
 
   drawCoinEffects(ctx) {
