@@ -75,38 +75,30 @@ class Game {
     if (!p.alive) return;
     if (p.x < 0) { p.x = 0; p.vx = 0; }
 
-    // --- X-axis collisions ---
-    let xb = p.getBounds();
+    // --- Pass 1: Y-axis collisions (landing / ceiling) ---
+    p.onGround = false;
     for (const plat of platforms) {
-      if (xb.y + xb.h > plat.y + 2 && xb.y < plat.y + plat.h - 2 &&
-          xb.x + xb.w > plat.x && xb.x < plat.x + plat.w) {
-        const overlapLeft = (xb.x + xb.w) - plat.x;
-        const overlapRight = (plat.x + plat.w) - xb.x;
-        if (overlapLeft < overlapRight) {
-          p.x -= overlapLeft;
+      const pb = p.getBounds();
+      if (pb.x + pb.w > plat.x && pb.x < plat.x + plat.w &&
+          pb.y + pb.h > plat.y && pb.y < plat.y + plat.h) {
+        if (p.vy >= 0) {
+          p.y = plat.y - p.h; p.vy = 0; p.onGround = true;
         } else {
-          p.x += overlapRight;
+          p.y = plat.y + plat.h; p.vy = 0;
         }
-        p.vx = 0;
-        xb = p.getBounds();
       }
     }
 
-    // --- Y-axis collisions ---
-    p.onGround = false;
-    let yb = p.getBounds();
+    // --- Pass 2: X-axis collisions (walls, only if deep vertical overlap) ---
     for (const plat of platforms) {
-      if (yb.x + yb.w > plat.x && yb.x < plat.x + plat.w &&
-          yb.y + yb.h > plat.y && yb.y < plat.y + plat.h) {
-        if (p.vy >= 0) {
-          p.y = plat.y - p.h;
-          p.vy = 0;
-          p.onGround = true;
-        } else {
-          p.y = plat.y + plat.h;
-          p.vy = 0;
-        }
-        yb = p.getBounds();
+      const pb = p.getBounds();
+      const vertOverlap = Math.min(pb.y + pb.h, plat.y + plat.h) - Math.max(pb.y, plat.y);
+      if (vertOverlap > 16 &&
+          pb.x + pb.w > plat.x && pb.x < plat.x + plat.w) {
+        const ol = (pb.x + pb.w) - plat.x;
+        const or = (plat.x + plat.w) - pb.x;
+        if (ol < or) { p.x -= ol; } else { p.x += or; }
+        p.vx = 0;
       }
     }
 
