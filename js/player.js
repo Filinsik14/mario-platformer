@@ -27,17 +27,20 @@ class Player {
   update(dt) {
     if (!this.alive) {
       this.vy += GRAVITY;
-      if (this.vy > MAX_FALL) this.vy = MAX_FALL;
       this.x += this.vx;
       this.y += this.vy;
       return;
     }
 
-    const prevState = this.state;
+    this.vy += GRAVITY;
+    if (this.vy > MAX_FALL) this.vy = MAX_FALL;
 
-    if (!this.alive) {
-      this.state = 'dead';
-    } else if (!this.onGround) {
+    if (this.state === 'jump' && this.vy < 0 && !keys[SPACE] && !keys[UP]) {
+      this.vy *= 0.45;
+    }
+
+    const prevState = this.state;
+    if (!this.onGround) {
       this.state = 'jump';
     } else if (Math.abs(this.vx) > 0.5) {
       this.state = 'run';
@@ -59,9 +62,6 @@ class Player {
         this.animFrame++;
       }
     }
-
-    this.vy += GRAVITY;
-    if (this.vy > MAX_FALL) this.vy = MAX_FALL;
 
     this.x += this.vx;
     this.y += this.vy;
@@ -103,9 +103,8 @@ class Player {
 
   draw(ctx, spritesheet, camX, camY) {
     if (!this.alive) {
-      const f = ANIM_DEATH;
       ctx.drawImage(
-        spritesheet, f.sx, f.sy, f.sw, f.sh,
+        spritesheet, ANIM_DEATH.sx, ANIM_DEATH.sy, ANIM_DEATH.sw, ANIM_DEATH.sh,
         Math.round(this.x - camX), Math.round(this.y - camY), this.w, this.h
       );
       return;

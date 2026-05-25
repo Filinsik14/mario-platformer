@@ -49,6 +49,7 @@ class Level {
 
   build() {
     const gY = GROUND_Y * TILE;
+    this.boss = null;
 
     if (this.levelNum === 0) {
       this.buildLevel1(gY);
@@ -57,6 +58,11 @@ class Level {
     } else {
       this.buildLevel3(gY);
     }
+  }
+
+  addBoss(tileX, patrolMin, patrolMax) {
+    const y = GROUND_Y * TILE - CHAR;
+    this.boss = { x: tileX * TILE, y, patrolMin: patrolMin * TILE, patrolMax: patrolMax * TILE };
   }
 
   buildLevel1(gY) {
@@ -123,6 +129,8 @@ class Level {
     this.addEnemy(38, 35, 42);
     this.addEnemy(53, 50, 60);
     this.addEnemy(80, 75, 85);
+
+    this.addBoss(83, 78, 90);
 
     this.setGoal(93);
   }

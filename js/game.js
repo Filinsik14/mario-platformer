@@ -16,6 +16,7 @@ class Game {
     this.enemies = this.level.enemies.map(e =>
       new Enemy(e.x, e.y, e.patrolMin, e.patrolMax)
     );
+    this.boss = this.level.boss ? new Boss(this.level.boss.x, this.level.boss.y, this.level.boss.patrolMin, this.level.boss.patrolMax) : null;
     this.coins = this.level.coins.map(c => ({ x: c.x, y: c.y, collected: false }));
     this.camera = { x: 0, y: 0 };
     this.state = 'playing';
@@ -23,13 +24,9 @@ class Game {
     this.coinEffects = [];
   }
 
-  reset() {
-    this.startLevel();
-  }
+  reset() { this.startLevel(); }
 
-  get coinsCollected() {
-    return this.coins.filter(c => c.collected).length;
-  }
+  get coinsCollected() { return this.coins.filter(c => c.collected).length; }
 
   update(dt) {
     if (this.state === 'gameover' || this.state === 'win') {
@@ -55,17 +52,14 @@ class Game {
     for (const e of this.enemies) {
       if (e.alive) e.update(dt);
     }
+    if (this.boss && this.boss.alive) this.boss.update(dt);
 
     this.handleCollisions();
     this.updateCamera();
     this.updateCoinEffects(dt);
 
     if (this.player.x > this.level.goalX) {
-      if (this.currentLevel < TOTAL_LEVELS - 1) {
-        this.state = 'levelComplete';
-      } else {
-        this.state = 'win';
-      }
+      this.state = this.currentLevel < TOTAL_LEVELS - 1 ? 'levelComplete' : 'win';
       this.transitionTimer = 0;
     }
 
@@ -76,93 +70,133 @@ class Game {
 
   handleCollisions() {
     const p = this.player;
-    const pb = p.getBounds();
+    const platforms = this.level.platforms;
+
+    if (!p.alive) return;
+    if (p.x < 0) { p.x = 0; p.vx = 0; }
+
+    // --- X-axis collisions ---
+    let xb = p.getBounds();
+    for (const plat of platforms) {
+      if (xb.y + xb.h > plat.y + 2 && xb.y < plat.y + plat.h - 2 &&
+          xb.x + xb.w > plat.x && xb.x < plat.x + plat.w) {
+        const overlapLeft = (xb.x + xb.w) - plat.x;
+        const overlapRight = (plat.x + plat.w) - xb.x;
+        if (overlapLeft < overlapRight) {
+          p.x = plat.x - xb.w - 6;
+          p.vx = 0;
+        } else {
+          p.x = plat.x + plat.w;
+          p.vx = 0;
+        }
+        xb = p.getBounds();
+      }
+    }
+
+    // --- Y-axis collisions ---
     p.onGround = false;
-
-    if (p.alive) {
-      if (p.x < 0) { p.x = 0; p.vx = 0; }
-
-      for (const plat of this.level.platforms) {
-        if (pb.x + pb.w > plat.x && pb.x < plat.x + plat.w) {
-          const overlapTop = (pb.y + pb.h) - plat.y;
-          const overlapBottom = (plat.y + plat.h) - pb.y;
-          const overlapLeft = (pb.x + pb.w) - plat.x;
-          const overlapRight = (plat.x + plat.w) - pb.x;
-
-          const minOverlap = Math.min(overlapTop, overlapBottom, overlapLeft, overlapRight);
-
-          if (minOverlap === overlapTop && p.vy >= 0) {
-            p.y = plat.y - p.h;
-            p.vy = 0;
-            p.onGround = true;
-          } else if (minOverlap === overlapBottom && p.vy < 0) {
-            p.y = plat.y + plat.h;
-            p.vy = 0;
-          } else if (minOverlap === overlapLeft) {
-            p.x = plat.x + plat.w;
-            p.vx = 0;
-          } else if (minOverlap === overlapRight) {
-            p.x = plat.x - pb.w - 6;
-            p.vx = 0;
-          }
+    let yb = p.getBounds();
+    for (const plat of platforms) {
+      if (yb.x + yb.w > plat.x && yb.x < plat.x + plat.w &&
+          yb.y + yb.h > plat.y && yb.y < plat.y + plat.h) {
+        if (p.vy >= 0) {
+          p.y = plat.y - p.h;
+          p.vy = 0;
+          p.onGround = true;
+        } else {
+          p.y = plat.y + plat.h;
+          p.vy = 0;
         }
+        yb = p.getBounds();
       }
+    }
 
-      for (const e of this.enemies) {
-        if (!e.alive) continue;
-        const eb = e.getBounds();
-
-        if (pb.x < eb.x + eb.w && pb.x + pb.w > eb.x &&
-            pb.y < eb.y + eb.h && pb.y + pb.h > eb.y) {
-          const fromAbove = p.vy > 0 && pb.y + pb.h - 10 <= eb.y + 10;
-
-          if (fromAbove && !e.squished) {
-            e.stomp();
-            p.vy = JUMP_FORCE * 0.6;
-            this.score += 100;
-          } else if (!e.squished) {
-            if (p.die()) {
-              this.score = Math.max(0, this.score - 50);
-            }
-          }
-        }
-      }
-
-      for (const c of this.coins) {
-        if (c.collected) continue;
-        const dx = p.x + p.w / 2 - c.x;
-        const dy = p.y + p.h / 2 - c.y;
-        if (Math.abs(dx) < TILE && Math.abs(dy) < TILE) {
-          c.collected = true;
-          this.score += 50;
-          this.coinEffects.push({ x: c.x, y: c.y, timer: 1 });
+    // --- Player-enemy collisions ---
+    const pb = p.getBounds();
+    for (const e of this.enemies) {
+      if (!e.alive) continue;
+      const eb = e.getBounds();
+      if (pb.x < eb.x + eb.w && pb.x + pb.w > eb.x &&
+          pb.y < eb.y + eb.h && pb.y + pb.h > eb.y) {
+        const fromAbove = p.vy > 0 && pb.y + pb.h - 10 <= eb.y + 10;
+        if (fromAbove && !e.squished) {
+          e.stomp();
+          p.vy = JUMP_FORCE * 0.6;
+          this.score += 100;
+        } else if (!e.squished) {
+          if (p.die()) this.score = Math.max(0, this.score - 50);
         }
       }
     }
 
+    // --- Player-boss collision ---
+    if (this.boss && this.boss.alive) {
+      const bb = this.boss.getBounds();
+      if (pb.x < bb.x + bb.w && pb.x + pb.w > bb.x &&
+          pb.y < bb.y + bb.h && pb.y + pb.h > bb.y) {
+        const fromAbove = p.vy > 0 && pb.y + pb.h - 10 <= bb.y + 10;
+        if (fromAbove && !this.boss.squished) {
+          if (this.boss.stomp()) {
+            p.vy = JUMP_FORCE * 0.6;
+            this.score += 200;
+          }
+        } else if (!this.boss.squished) {
+          if (p.die()) this.score = Math.max(0, this.score - 50);
+        }
+      }
+    }
+
+    // --- Coins ---
+    for (const c of this.coins) {
+      if (c.collected) continue;
+      const dx = p.x + p.w / 2 - c.x;
+      const dy = p.y + p.h / 2 - c.y;
+      if (Math.abs(dx) < TILE && Math.abs(dy) < TILE) {
+        c.collected = true;
+        this.score += 50;
+        this.coinEffects.push({ x: c.x, y: c.y, timer: 1 });
+      }
+    }
+
+    // --- Enemy-platform collisions ---
     for (const e of this.enemies) {
       if (!e.alive || e.squished) continue;
       e.onGround = false;
-      const eb = e.getBounds();
-      for (const plat of this.level.platforms) {
-        if (eb.x + eb.w > plat.x && eb.x < plat.x + plat.w) {
-          const overlapTop = (eb.y + eb.h) - plat.y;
-          const overlapBottom = (plat.y + plat.h) - eb.y;
-          const overlapLeft = (eb.x + eb.w) - plat.x;
-          const overlapRight = (plat.x + plat.w) - eb.x;
-
-          const minOverlap = Math.min(overlapTop, overlapBottom, overlapLeft, overlapRight);
-
-          if (minOverlap === overlapTop && e.vy >= 0) {
+      let eb = e.getBounds();
+      for (const plat of platforms) {
+        if (eb.x + eb.w > plat.x && eb.x < plat.x + plat.w &&
+            eb.y + eb.h > plat.y && eb.y < plat.y + plat.h) {
+          if (e.vy >= 0) {
             e.y = plat.y - e.h;
             e.vy = 0;
             e.onGround = true;
-          } else if (minOverlap === overlapBottom && e.vy < 0) {
+          } else {
             e.y = plat.y + plat.h;
             e.vy = 0;
-          } else if (minOverlap === overlapLeft || minOverlap === overlapRight) {
             e.vx = -e.vx;
           }
+          eb = e.getBounds();
+        }
+      }
+    }
+
+    // --- Boss-platform collisions ---
+    if (this.boss && this.boss.alive && !this.boss.squished) {
+      this.boss.onGround = false;
+      let bb = this.boss.getBounds();
+      for (const plat of platforms) {
+        if (bb.x + bb.w > plat.x && bb.x < plat.x + plat.w &&
+            bb.y + bb.h > plat.y && bb.y < plat.y + plat.h) {
+          if (this.boss.vy >= 0) {
+            this.boss.y = plat.y - this.boss.h;
+            this.boss.vy = 0;
+            this.boss.onGround = true;
+          } else {
+            this.boss.y = plat.y + plat.h;
+            this.boss.vy = 0;
+            this.boss.vx = -this.boss.vx;
+          }
+          bb = this.boss.getBounds();
         }
       }
     }
@@ -176,64 +210,46 @@ class Game {
   updateCoinEffects(dt) {
     for (let i = this.coinEffects.length - 1; i >= 0; i--) {
       this.coinEffects[i].timer -= dt;
-      if (this.coinEffects[i].timer <= 0) {
-        this.coinEffects.splice(i, 1);
-      }
+      if (this.coinEffects[i].timer <= 0) this.coinEffects.splice(i, 1);
     }
   }
 
   updateCamera() {
     const targetX = this.player.x - CANVAS_WIDTH / 2 + this.player.w / 2;
     const targetY = this.player.y - CANVAS_HEIGHT / 2 + this.player.h / 2;
-
     this.camera.x += (targetX - this.camera.x) * 0.1;
     this.camera.y += (targetY - this.camera.y) * 0.1;
-
-    const maxCamX = this.level.worldTiles * TILE - CANVAS_WIDTH;
-    this.camera.x = Math.max(0, Math.min(this.camera.x, maxCamX));
+    this.camera.x = Math.max(0, Math.min(this.camera.x, this.level.worldTiles * TILE - CANVAS_WIDTH));
     this.camera.y = Math.max(0, Math.min(this.camera.y, 0));
   }
 
   draw() {
     const ctx = this.ctx;
-
     this.level.drawBackground(ctx, this.camera.x);
     this.level.drawPlatforms(ctx, this.tileSheet, this.camera.x);
     this.level.drawCoins(ctx, this.tileSheet, this.camera.x, this.coins);
 
-    for (const e of this.enemies) {
-      e.draw(ctx, this.charSheet, this.camera.x, this.camera.y);
-    }
+    for (const e of this.enemies) e.draw(ctx, this.charSheet, this.camera.x, this.camera.y);
+    if (this.boss) this.boss.draw(ctx, this.charSheet, this.camera.x, this.camera.y);
 
     this.level.drawFlag(ctx, this.tileSheet, this.camera.x);
     this.player.draw(ctx, this.charSheet, this.camera.x, this.camera.y);
     this.drawCoinEffects(ctx);
     this.drawHUD(ctx);
 
-    if (this.state === 'gameover') {
-      this.drawOverlay(ctx, 'GAME OVER', '#e94560', 'Press R to restart');
-    } else if (this.state === 'levelComplete') {
-      this.drawOverlay(ctx, 'LEVEL ' + (this.currentLevel + 1) + ' COMPLETE!', '#4ecca3', 'Get ready for next level...');
-    } else if (this.state === 'win') {
-      this.drawOverlay(ctx, 'YOU WIN!', '#f1c40f', 'Press R to play again');
-    }
+    if (this.state === 'gameover') this.drawOverlay(ctx, 'GAME OVER', '#e94560', 'Press R to restart');
+    else if (this.state === 'levelComplete') this.drawOverlay(ctx, 'LEVEL ' + (this.currentLevel + 1) + ' COMPLETE!', '#4ecca3', 'Get ready for next level...');
+    else if (this.state === 'win') this.drawOverlay(ctx, 'YOU WIN!', '#f1c40f', 'Press R to play again');
   }
 
   drawCoinEffects(ctx) {
     for (const e of this.coinEffects) {
-      const alpha = Math.min(e.timer * 2, 1);
-      const offsetY = (1 - e.timer) * 60;
-
       ctx.save();
-      ctx.globalAlpha = alpha;
+      ctx.globalAlpha = Math.min(e.timer * 2, 1);
       ctx.fillStyle = '#f1c40f';
       ctx.font = 'bold 20px monospace';
       ctx.textAlign = 'center';
-      ctx.fillText(
-        '+50',
-        Math.round(e.x - this.camera.x),
-        Math.round(e.y - this.camera.y - offsetY)
-      );
+      ctx.fillText('+50', Math.round(e.x - this.camera.x), Math.round(e.y - this.camera.y - (1 - e.timer) * 60));
       ctx.restore();
     }
   }
@@ -241,17 +257,13 @@ class Game {
   drawHUD(ctx) {
     ctx.fillStyle = 'rgba(0,0,0,0.6)';
     ctx.fillRect(0, 0, CANVAS_WIDTH, 44);
-
     ctx.fillStyle = '#ffffff';
     ctx.font = 'bold 16px monospace';
     ctx.textAlign = 'left';
     ctx.fillText('LEVEL ' + (this.currentLevel + 1) + '/' + TOTAL_LEVELS, 16, 28);
-
     ctx.textAlign = 'center';
     ctx.fillText('SCORE: ' + this.score, CANVAS_WIDTH / 2 - 80, 28);
-
-    const coinColor = this.coinsCollected === this.coins.length ? '#f1c40f' : '#ffffff';
-    ctx.fillStyle = coinColor;
+    ctx.fillStyle = this.coinsCollected === this.coins.length ? '#f1c40f' : '#ffffff';
     ctx.textAlign = 'right';
     ctx.fillText('COINS: ' + this.coinsCollected + '/' + this.coins.length, CANVAS_WIDTH - 16, 28);
   }
@@ -259,20 +271,16 @@ class Game {
   drawOverlay(ctx, title, color, sub) {
     ctx.fillStyle = 'rgba(0,0,0,0.75)';
     ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-
     ctx.fillStyle = color;
     ctx.font = 'bold 56px monospace';
     ctx.textAlign = 'center';
     ctx.fillText(title, CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 - 30);
-
     ctx.fillStyle = '#ffffff';
     ctx.font = '18px monospace';
     ctx.fillText(sub || '', CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 + 30);
-
     ctx.fillStyle = '#aaaaaa';
     ctx.font = '14px monospace';
     ctx.fillText('Score: ' + this.score, CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 + 70);
-
     if (this.state === 'gameover' || this.state === 'win') {
       ctx.fillStyle = '#888888';
       ctx.font = '14px monospace';
