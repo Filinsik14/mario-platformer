@@ -36,7 +36,7 @@ class Player {
     if (this.vy > MAX_FALL) this.vy = MAX_FALL;
 
     if (this.state === 'jump' && this.vy < 0 && !keys[SPACE] && !keys[UP]) {
-      this.vy *= 0.45;
+      this.vy += GRAVITY * 2;
     }
 
     const prevState = this.state;
