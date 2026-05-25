@@ -93,14 +93,22 @@ class Boss {
 
     ctx.restore();
 
-    const heartY = drawY - 18;
-    const heartSpacing = 22;
-    const startX = drawX + (this.w - this.maxHp * heartSpacing) / 2;
-    for (let i = 0; i < this.maxHp; i++) {
-      ctx.fillStyle = i < this.hp ? '#ff3333' : '#555555';
-      ctx.font = '18px monospace';
-      ctx.textAlign = 'center';
-      ctx.fillText('♥', startX + i * heartSpacing + 9, heartY);
-    }
+    const barW = 80;
+    const barH = 10;
+    const barX = drawX + (this.w - barW) / 2;
+    const barY = drawY - 22;
+    ctx.fillStyle = '#333333';
+    ctx.fillRect(barX, barY, barW, barH);
+    const hpRatio = this.hp / this.maxHp;
+    ctx.fillStyle = hpRatio > 0.5 ? '#44cc44' : hpRatio > 0.25 ? '#e9c46a' : '#ff4444';
+    ctx.fillRect(barX, barY, barW * hpRatio, barH);
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(barX, barY, barW, barH);
+
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 11px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('BOSS', drawX + this.w / 2, barY - 4);
   }
 }

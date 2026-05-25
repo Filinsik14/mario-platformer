@@ -7,6 +7,12 @@ class Game {
     this.currentLevel = 0;
     this.score = 0;
     this.coinEffects = [];
+    this.state = 'menu';
+  }
+
+  selectLevel(n) {
+    this.currentLevel = n;
+    this.score = 0;
     this.startLevel();
   }
 
@@ -217,6 +223,11 @@ class Game {
 
   draw() {
     const ctx = this.ctx;
+    if (this.state === 'menu') {
+      this.drawMenu(ctx);
+      return;
+    }
+
     this.level.drawBackground(ctx, this.camera.x);
     this.level.drawPlatforms(ctx, this.tileSheet, this.camera.x);
     this.level.drawCoins(ctx, this.tileSheet, this.camera.x, this.coins);
@@ -232,6 +243,62 @@ class Game {
     if (this.state === 'gameover') this.drawOverlay(ctx, 'GAME OVER', '#e94560', 'Press R to restart');
     else if (this.state === 'levelComplete') this.drawOverlay(ctx, 'LEVEL ' + (this.currentLevel + 1) + ' COMPLETE!', '#4ecca3', 'Get ready for next level...');
     else if (this.state === 'win') this.drawOverlay(ctx, 'YOU WIN!', '#f1c40f', 'Press R to play again');
+  }
+
+  drawMenu(ctx) {
+    const levels = [
+      { label: '1', color: '#4ecca3', bg: '#1a3a32' },
+      { label: '2', color: '#e9c46a', bg: '#3a2e1a' },
+      { label: '3', color: '#e94560', bg: '#3a1a24' }
+    ];
+
+    const sky = ctx.createLinearGradient(0, 0, 0, CANVAS_HEIGHT);
+    sky.addColorStop(0, '#0f0f23');
+    sky.addColorStop(1, '#1a1a3e');
+    ctx.fillStyle = sky;
+    ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 42px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('PIXEL PLATFORMER', CANVAS_WIDTH / 2, 120);
+
+    ctx.fillStyle = '#8888aa';
+    ctx.font = '20px monospace';
+    ctx.fillText('SELECT LEVEL', CANVAS_WIDTH / 2, 175);
+
+    const btnW = 140;
+    const btnH = 140;
+    const gap = 40;
+    const totalW = levels.length * btnW + (levels.length - 1) * gap;
+    const startX = (CANVAS_WIDTH - totalW) / 2;
+    const btnY = 250;
+
+    for (let i = 0; i < levels.length; i++) {
+      const x = startX + i * (btnW + gap);
+      ctx.fillStyle = levels[i].bg;
+      ctx.fillRect(x, btnY, btnW, btnH);
+      ctx.strokeStyle = levels[i].color;
+      ctx.lineWidth = 3;
+      ctx.strokeRect(x, btnY, btnW, btnH);
+
+      ctx.fillStyle = levels[i].color;
+      ctx.font = 'bold 52px monospace';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(levels[i].label, x + btnW / 2, btnY + btnH / 2);
+      ctx.textBaseline = 'alphabetic';
+
+      ctx.fillStyle = '#aaaaaa';
+      ctx.font = '14px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('Level ' + levels[i].label, x + btnW / 2, btnY + btnH + 30);
+    }
+
+    ctx.fillStyle = '#666688';
+    ctx.font = '15px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('Click a level or press 1 / 2 / 3', CANVAS_WIDTH / 2, CANVAS_HEIGHT - 60);
   }
 
   drawCoinEffects(ctx) {

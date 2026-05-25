@@ -3,18 +3,41 @@ const ctx = canvas.getContext('2d');
 
 document.addEventListener('keydown', (e) => {
   if (!keys[e.keyCode]) {
+    if (game && game.state === 'menu') {
+      if (e.keyCode >= 49 && e.keyCode <= 51) {
+        game.selectLevel(e.keyCode - 49);
+      }
+    }
     if ((e.keyCode === SPACE || e.keyCode === UP) && game && game.state === 'playing') {
       game.player.jump();
     }
     if ((e.keyCode === R_KEY || e.keyCode === ENTER_KEY) && game &&
         (game.state === 'gameover' || game.state === 'win')) {
-      game.currentLevel = 0;
-      game.score = 0;
-      game.startLevel();
+      game.selectLevel(0);
     }
   }
   keys[e.keyCode] = true;
   if (e.keyCode === SPACE || e.keyCode === UP) e.preventDefault();
+});
+
+canvas.addEventListener('click', (e) => {
+  if (!game || game.state !== 'menu') return;
+  const rect = canvas.getBoundingClientRect();
+  const mx = (e.clientX - rect.left) * (CANVAS_WIDTH / rect.width);
+  const my = (e.clientY - rect.top) * (CANVAS_HEIGHT / rect.height);
+
+  const btnW = 140, btnH = 140, gap = 40;
+  const totalW = 3 * btnW + 2 * gap;
+  const startX = (CANVAS_WIDTH - totalW) / 2;
+  const btnY = 250;
+
+  for (let i = 0; i < 3; i++) {
+    const bx = startX + i * (btnW + gap);
+    if (mx >= bx && mx <= bx + btnW && my >= btnY && my <= btnY + btnH) {
+      game.selectLevel(i);
+      return;
+    }
+  }
 });
 
 document.addEventListener('keyup', (e) => {
