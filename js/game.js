@@ -137,6 +137,8 @@ class Game {
         if (fromAbove && !this.boss.squished) {
           if (this.boss.stomp()) {
             p.vy = JUMP_FORCE * 0.8;
+            p.y = this.boss.y - p.h - 1;
+            p.invincible = 0.5;
             this.score += 200;
           }
         } else if (!this.boss.squished) {
