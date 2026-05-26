@@ -37,7 +37,7 @@ const ANIM_JUMP_DOWN = charFrame(7, 0);
 const ANIM_DEATH = charFrame(8, 0);
 
 const ENEMY_SPRITES = [charFrame(0, 2), charFrame(1, 2)];
-const BOSS_SPRITE = charFrame(2, 2);
+const BOSS_SPRITE = charFrame(4, 2);
 
 const TILE_GROUND_TOP = tileFrame(0, 0);
 const TILE_GROUND_INNER = tileFrame(1, 0);

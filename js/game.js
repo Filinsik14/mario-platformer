@@ -88,23 +88,33 @@ class Game {
       if (pb.x + pb.w > plat.x && pb.x < plat.x + plat.w &&
           pb.y + pb.h > plat.y && pb.y < plat.y + plat.h) {
         if (p.vy >= 0) {
-          p.y = plat.y - p.h; p.vy = 0; p.onGround = true;
+          const feetOverlap = pb.y + pb.h - plat.y;
+          if (feetOverlap < 12) {
+            p.y = plat.y - p.h; p.vy = 0; p.onGround = true;
+          }
         } else {
-          p.y = plat.y + plat.h; p.vy = 0;
+          const headOverlap = plat.y + plat.h - pb.y;
+          if (headOverlap < 12) {
+            p.y = plat.y + plat.h; p.vy = 0;
+          }
         }
       }
     }
 
-    // --- Pass 2: X-axis collisions (walls, only if deep vertical overlap) ---
+    // --- Pass 2: X-axis collisions (walls) ---
     for (const plat of platforms) {
       const pb = p.getBounds();
-      const vertOverlap = Math.min(pb.y + pb.h, plat.y + plat.h) - Math.max(pb.y, plat.y);
-      if (vertOverlap > 16 &&
+      const pcY = pb.y + pb.h / 2;
+      if (pcY > plat.y && pcY < plat.y + plat.h &&
           pb.x + pb.w > plat.x && pb.x < plat.x + plat.w) {
         if (p.vx > 0) {
           p.x = plat.x - (p.w - 6);
         } else if (p.vx < 0) {
           p.x = plat.x + plat.w - 6;
+        } else {
+          const dLeft = pb.x + pb.w - plat.x;
+          const dRight = plat.x + plat.w - pb.x;
+          if (dLeft < dRight) { p.x -= dLeft; } else { p.x += dRight; }
         }
         p.vx = 0;
       }
@@ -137,11 +147,11 @@ class Game {
         const fromAbove = p.vy > 0 && pb.y + pb.h - 8 <= bb.y + 24;
         if (fromAbove && !this.boss.squished) {
           if (this.boss.stomp()) {
-            p.vy = JUMP_FORCE * 0.8;
-            p.y = this.boss.y - p.h - 1;
-            p.invincible = 0.5;
             this.score += 200;
           }
+          p.vy = JUMP_FORCE * 0.8;
+          p.y = this.boss.y - p.h - 1;
+          p.invincible = 0.5;
         } else if (!this.boss.squished) {
           if (p.die()) this.score = Math.max(0, this.score - 50);
         }
