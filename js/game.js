@@ -124,7 +124,6 @@ class Game {
           } else if (!e.squished) {
             if (p.die()) this.score = Math.max(0, this.score - 50);
           }
-        }
       }
     }
 
