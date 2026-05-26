@@ -71,8 +71,15 @@ class Game {
     this.updateCoinEffects(dt);
 
     if (this.player.x > this.level.goalX) {
-      this.state = this.currentLevel < TOTAL_LEVELS - 1 ? 'levelComplete' : 'win';
-      this.transitionTimer = 0;
+      if (this.boss && this.boss.alive && !this.boss.squished) {
+        this.bossMessage = 'DEFEAT THE BOSS FIRST!';
+        this.bossMessageTimer = 2;
+        this.player.x = this.level.goalX - TILE;
+        this.player.vx = 0;
+      } else {
+        this.state = this.currentLevel < TOTAL_LEVELS - 1 ? 'levelComplete' : 'win';
+        this.transitionTimer = 0;
+      }
     }
 
     if (!this.player.alive && this.player.y > GROUND_Y * TILE + 300) {
