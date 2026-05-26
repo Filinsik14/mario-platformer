@@ -148,7 +148,17 @@ class Game {
           pb.y < bb.y + bb.h && pb.y + pb.h > bb.y) {
         const fromAbove = p.vy > 0 && pb.y + pb.h - 8 <= bb.y + 24;
         if (fromAbove && !this.boss.squished) {
-          if (this.bossHitTimer <= 0 && this.boss.stomp()) {
+          if (this.bossHitTimer <= 0) {
+            this.boss.hp--;
+            if (this.boss.hp <= 0) {
+              this.boss.squished = true;
+              this.boss.squishTimer = 0.5;
+              this.boss.vx = 0;
+              this.boss.vy = 0;
+            } else {
+              this.boss.invincible = 1.2;
+              this.boss.vy = -7;
+            }
             this.score += 200;
             this.bossHitTimer = 0.5;
           }
