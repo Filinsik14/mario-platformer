@@ -126,7 +126,6 @@ class Game {
           }
         }
       }
-
     }
 
     // --- Player-boss collision ---
