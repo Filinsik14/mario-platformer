@@ -28,6 +28,7 @@ class Game {
     this.state = 'playing';
     this.transitionTimer = 0;
     this.coinEffects = [];
+    this.bossHitTimer = 0;
   }
 
   reset() { this.startLevel(); }
@@ -59,6 +60,7 @@ class Game {
       if (e.alive) e.update(dt);
     }
     if (this.boss && this.boss.alive) this.boss.update(dt);
+    if (this.bossHitTimer > 0) this.bossHitTimer -= dt;
 
     this.handleCollisions();
     this.updateCamera();
@@ -146,8 +148,9 @@ class Game {
           pb.y < bb.y + bb.h && pb.y + pb.h > bb.y) {
         const fromAbove = p.vy > 0 && pb.y + pb.h - 8 <= bb.y + 24;
         if (fromAbove && !this.boss.squished) {
-          if (this.boss.stomp()) {
+          if (this.bossHitTimer <= 0 && this.boss.stomp()) {
             this.score += 200;
+            this.bossHitTimer = 0.5;
           }
           p.vy = JUMP_FORCE * 0.8;
           p.y = this.boss.y - p.h - 1;
