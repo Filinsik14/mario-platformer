@@ -29,6 +29,7 @@ class Game {
     this.transitionTimer = 0;
     this.coinEffects = [];
     this.bossHitTimer = 0;
+    this.bossHp = 3;
   }
 
   reset() { this.startLevel(); }
@@ -149,8 +150,9 @@ class Game {
         const fromAbove = p.vy > 0 && pb.y + pb.h - 8 <= bb.y + 24;
         if (fromAbove && !this.boss.squished) {
           if (this.bossHitTimer <= 0) {
-            this.boss.hp--;
-            if (this.boss.hp <= 0) {
+            this.bossHp--;
+            this.boss.hp = this.bossHp;
+            if (this.bossHp <= 0) {
               this.boss.squished = true;
               this.boss.squishTimer = 0.5;
               this.boss.vx = 0;
