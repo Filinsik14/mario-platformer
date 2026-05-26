@@ -110,5 +110,8 @@ class Boss {
     ctx.font = 'bold 11px monospace';
     ctx.textAlign = 'center';
     ctx.fillText('BOSS', drawX + this.w / 2, barY - 4);
+    ctx.font = 'bold 14px monospace';
+    ctx.fillStyle = '#ffff00';
+    ctx.fillText('HP: ' + this.hp + '/' + this.maxHp, drawX + this.w / 2, barY + barH + 14);
   }
 }
