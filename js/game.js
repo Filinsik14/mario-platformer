@@ -19,17 +19,20 @@ class Game {
   startLevel() {
     this.level = new Level(this.currentLevel);
     this.player = new Player(3 * TILE, GROUND_Y * TILE - CHAR);
-    this.enemies = this.level.enemies.map(e =>
-      new Enemy(e.x, e.y, e.patrolMin, e.patrolMax)
-    );
+    this.enemies = this.level.enemies.map(e => {
+      const enemy = new Enemy(e.x, e.y, e.patrolMin, e.patrolMax);
+      if (e.isBossGuard) enemy.isBossGuard = true;
+      return enemy;
+    });
     this.boss = this.level.boss ? new Boss(this.level.boss.x, this.level.boss.y, this.level.boss.patrolMin, this.level.boss.patrolMax) : null;
     this.coins = this.level.coins.map(c => ({ x: c.x, y: c.y, collected: false }));
     this.camera = { x: 0, y: 0 };
     this.state = 'playing';
     this.transitionTimer = 0;
     this.coinEffects = [];
-    this.bossHitTimer = 0;
-    this.bossHp = 3;
+    this.bossGuardsAlive = this.enemies.filter(e => e.isBossGuard).length;
+    this.bossMessage = '';
+    this.bossMessageTimer = 0;
   }
 
   reset() { this.startLevel(); }
@@ -61,7 +64,7 @@ class Game {
       if (e.alive) e.update(dt);
     }
     if (this.boss && this.boss.alive) this.boss.update(dt);
-    if (this.bossHitTimer > 0) this.bossHitTimer -= dt;
+    if (this.bossMessageTimer > 0) this.bossMessageTimer -= dt;
 
     this.handleCollisions();
     this.updateCamera();
@@ -136,6 +139,17 @@ class Game {
             e.stomp();
             p.vy = JUMP_FORCE * 0.8;
             this.score += 100;
+            if (e.isBossGuard && this.boss && !this.boss.squished) {
+              this.bossGuardsAlive--;
+              if (this.bossGuardsAlive <= 0) {
+                this.boss.vulnerable = true;
+                this.bossMessage = 'BOSS VULNERABLE!';
+                this.bossMessageTimer = 3;
+              } else {
+                this.bossMessage = 'GUARD DEFEATED! ' + this.bossGuardsAlive + ' REMAINING';
+                this.bossMessageTimer = 2;
+              }
+            }
           } else if (!e.squished) {
             if (p.die()) this.score = Math.max(0, this.score - 50);
           }
@@ -149,20 +163,17 @@ class Game {
           pb.y < bb.y + bb.h && pb.y + pb.h > bb.y) {
         const fromAbove = p.vy > 0 && pb.y + pb.h - 8 <= bb.y + 24;
         if (fromAbove && !this.boss.squished) {
-          if (this.bossHitTimer <= 0) {
-            this.bossHp--;
-            this.boss.hp = this.bossHp;
-            if (this.bossHp <= 0) {
-              this.boss.squished = true;
-              this.boss.squishTimer = 0.5;
-              this.boss.vx = 0;
-              this.boss.vy = 0;
-            } else {
-              this.boss.invincible = 1.2;
-              this.boss.vy = -7;
-            }
-            this.score += 200;
-            this.bossHitTimer = 0.5;
+          if (this.boss.vulnerable) {
+            this.boss.squished = true;
+            this.boss.squishTimer = 0.5;
+            this.boss.vx = 0;
+            this.boss.vy = 0;
+            this.score += 1000;
+            this.bossMessage = 'BOSS DEFEATED!';
+            this.bossMessageTimer = 4;
+          } else {
+            this.bossMessage = 'KILL THE GUARDS FIRST!';
+            this.bossMessageTimer = 2;
           }
           p.vy = JUMP_FORCE * 0.8;
           p.y = this.boss.y - p.h - 1;
@@ -268,6 +279,18 @@ class Game {
     this.player.draw(ctx, this.charSheet, this.camera.x, this.camera.y);
     this.drawCoinEffects(ctx);
     this.drawHUD(ctx);
+
+    if (this.bossMessageTimer > 0 && this.state === 'playing') {
+      ctx.save();
+      ctx.globalAlpha = Math.min(this.bossMessageTimer, 1);
+      ctx.fillStyle = '#ff4444';
+      ctx.font = 'bold 28px monospace';
+      ctx.textAlign = 'center';
+      ctx.shadowColor = '#000000';
+      ctx.shadowBlur = 8;
+      ctx.fillText(this.bossMessage, CANVAS_WIDTH / 2, 100);
+      ctx.restore();
+    }
 
     if (this.state === 'gameover') this.drawOverlay(ctx, 'GAME OVER', '#e94560', 'Press R to restart');
     else if (this.state === 'levelComplete') this.drawOverlay(ctx, 'LEVEL ' + (this.currentLevel + 1) + ' COMPLETE!', '#4ecca3', 'Get ready for next level...');
@@ -395,6 +418,10 @@ class Game {
     ctx.fillText('LEVEL ' + (this.currentLevel + 1) + '/' + TOTAL_LEVELS, 16, 28);
     ctx.textAlign = 'center';
     ctx.fillText('SCORE: ' + this.score, CANVAS_WIDTH / 2 - 80, 28);
+    if (this.boss && this.boss.alive && !this.boss.vulnerable) {
+      ctx.fillStyle = '#4488ff';
+      ctx.fillText('GUARDS: ' + this.bossGuardsAlive, CANVAS_WIDTH / 2 + 120, 28);
+    }
     ctx.fillStyle = this.coinsCollected === this.coins.length ? '#f1c40f' : '#ffffff';
     ctx.textAlign = 'right';
     ctx.fillText('COINS: ' + this.coinsCollected + '/' + this.coins.length, CANVAS_WIDTH - 16, 28);

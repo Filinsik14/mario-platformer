@@ -9,14 +9,13 @@ class Boss {
     this.patrolMin = patrolMin || x - 200;
     this.patrolMax = patrolMax || x + 200;
     this.alive = true;
-    this.hp = 3;
-    this.maxHp = 3;
+    this.vulnerable = false;
     this.onGround = false;
     this.animTimer = 0;
     this.animFrame = 0;
-    this.invincible = 0;
     this.squished = false;
     this.squishTimer = 0;
+    this.invincible = 0;
   }
 
   update(dt) {
@@ -51,21 +50,6 @@ class Boss {
     }
   }
 
-  stomp() {
-    if (this.invincible > 0 || this.squished) return false;
-    this.hp--;
-    if (this.hp <= 0) {
-      this.squished = true;
-      this.squishTimer = 0.5;
-      this.vx = 0;
-      this.vy = 0;
-      return true;
-    }
-    this.invincible = 1.2;
-    this.vy = -7;
-    return true;
-  }
-
   getBounds() {
     return { x: this.x + 4, y: this.y + 4, w: this.w - 8, h: this.h - 4 };
   }
@@ -86,32 +70,30 @@ class Boss {
     if (this.squished) {
       ctx.drawImage(spritesheet, BOSS_SPRITE.sx, BOSS_SPRITE.sy, BOSS_SPRITE.sw, BOSS_SPRITE.sh,
         drawX, drawY + this.h * 0.5, this.w, this.h * 0.5);
+      ctx.restore();
+      return;
+    }
+
+    ctx.drawImage(spritesheet, BOSS_SPRITE.sx, BOSS_SPRITE.sy, BOSS_SPRITE.sw, BOSS_SPRITE.sh,
+      drawX, drawY, this.w, this.h);
+
+    if (!this.vulnerable) {
+      ctx.fillStyle = 'rgba(0, 100, 255, 0.25)';
+      ctx.fillRect(drawX, drawY, this.w, this.h);
+      ctx.strokeStyle = '#4488ff';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([4, 4]);
+      ctx.strokeRect(drawX - 2, drawY - 2, this.w + 4, this.h + 4);
+      ctx.setLineDash([]);
+      ctx.fillStyle = '#4488ff';
+      ctx.font = 'bold 12px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('SHIELDED', drawX + this.w / 2, drawY - 8);
     } else {
-      ctx.drawImage(spritesheet, BOSS_SPRITE.sx, BOSS_SPRITE.sy, BOSS_SPRITE.sw, BOSS_SPRITE.sh,
-        drawX, drawY, this.w, this.h);
+      ctx.fillStyle = 'rgba(255, 50, 50, 0.15)';
+      ctx.fillRect(drawX, drawY, this.w, this.h);
     }
 
     ctx.restore();
-
-    const barW = 80;
-    const barH = 10;
-    const barX = drawX + (this.w - barW) / 2;
-    const barY = drawY - 22;
-    ctx.fillStyle = '#333333';
-    ctx.fillRect(barX, barY, barW, barH);
-    const hpRatio = this.hp / this.maxHp;
-    ctx.fillStyle = hpRatio > 0.5 ? '#44cc44' : hpRatio > 0.25 ? '#e9c46a' : '#ff4444';
-    ctx.fillRect(barX, barY, barW * hpRatio, barH);
-    ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth = 1;
-    ctx.strokeRect(barX, barY, barW, barH);
-
-    ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 11px monospace';
-    ctx.textAlign = 'center';
-    ctx.fillText('BOSS', drawX + this.w / 2, barY - 4);
-    ctx.font = 'bold 14px monospace';
-    ctx.fillStyle = '#ffff00';
-    ctx.fillText('HP: ' + this.hp + '/' + this.maxHp, drawX + this.w / 2, barY + barH + 14);
   }
 }

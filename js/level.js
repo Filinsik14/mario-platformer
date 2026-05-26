@@ -65,6 +65,11 @@ class Level {
     this.boss = { x: tileX * TILE, y, patrolMin: patrolMin * TILE, patrolMax: patrolMax * TILE };
   }
 
+  addGuard(tileX, patrolMin, patrolMax) {
+    const y = GROUND_Y * TILE - CHAR;
+    this.enemies.push({ x: tileX * TILE, y, patrolMin: patrolMin * TILE, patrolMax: patrolMax * TILE, isBossGuard: true });
+  }
+
   buildLevel1(gY) {
     this.addGround([[0, 26], [31, 50]], gY);
     this.addPlat(8, 3, 3);
@@ -129,6 +134,8 @@ class Level {
     this.addEnemy(38, 35, 42);
     this.addEnemy(53, 50, 60);
     this.addEnemy(80, 75, 85);
+    this.addGuard(81, 79, 84);
+    this.addGuard(86, 82, 88);
 
     this.addBoss(83, 78, 90);
 
