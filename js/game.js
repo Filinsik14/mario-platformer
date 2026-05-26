@@ -101,9 +101,11 @@ class Game {
       const vertOverlap = Math.min(pb.y + pb.h, plat.y + plat.h) - Math.max(pb.y, plat.y);
       if (vertOverlap > 16 &&
           pb.x + pb.w > plat.x && pb.x < plat.x + plat.w) {
-        const ol = (pb.x + pb.w) - plat.x;
-        const or = (plat.x + plat.w) - pb.x;
-        if (ol < or) { p.x -= ol; } else { p.x += or; }
+        if (p.vx > 0) {
+          p.x = plat.x - (p.w - 6);
+        } else if (p.vx < 0) {
+          p.x = plat.x + plat.w - 6;
+        }
         p.vx = 0;
       }
     }
