@@ -271,6 +271,7 @@ class Game {
     this.level.drawBackground(ctx, this.camera.x);
     this.level.drawPlatforms(ctx, this.tileSheet, this.camera.x);
     this.level.drawCoins(ctx, this.tileSheet, this.camera.x, this.coins);
+    this.level.drawDecorations(ctx, this.tileSheet, this.camera.x);
 
     for (const e of this.enemies) e.draw(ctx, this.charSheet, this.camera.x, this.camera.y);
     if (this.boss) this.boss.draw(ctx, this.charSheet, this.camera.x, this.camera.y);

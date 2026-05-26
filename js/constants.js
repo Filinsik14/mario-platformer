@@ -41,7 +41,7 @@ const BOSS_SPRITE = charFrame(4, 2);
 
 const TILE_GROUND_TOP = tileFrame(0, 0);
 const TILE_GROUND_INNER = tileFrame(1, 0);
-const TILE_PLATFORM = tileFrame(2, 0);
+const TILE_PLATFORM = tileFrame(4, 0);
 const TILE_COIN = tileFrame(9, 0);
 
 const TOTAL_LEVELS = 3;

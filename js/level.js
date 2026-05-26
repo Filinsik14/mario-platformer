@@ -4,6 +4,7 @@ class Level {
     this.platforms = [];
     this.enemies = [];
     this.coins = [];
+    this.decorations = [];
     this.flagX = 0;
     this.goalX = 0;
     this.worldTiles = 60;
@@ -32,6 +33,14 @@ class Level {
   addCoin(tileX, tileY) {
     const y = GROUND_Y * TILE - tileY * TILE;
     this.coins.push({ x: tileX * TILE + TILE / 2, y: y + TILE / 2 });
+  }
+
+  addDecor(tileX, tileY, col, row) {
+    const y = GROUND_Y * TILE - tileY * TILE;
+    this.decorations.push({
+      x: tileX * TILE, y,
+      frame: tileFrame(col, row)
+    });
   }
 
   addEnemy(tileX, patrolMin, patrolMax) {
@@ -129,6 +138,18 @@ class Level {
     this.addCoin(36, 6);
     this.addCoin(59, 6);
 
+    this.addDecor(6, 3, 4, 6);
+    this.addDecor(13, 5, 5, 6);
+    this.addDecor(21, 3, 8, 6);
+    this.addDecor(28, 4, 4, 6);
+    this.addDecor(41, 3, 5, 6);
+    this.addDecor(51, 4, 4, 6);
+    this.addDecor(59, 5, 8, 6);
+    this.addDecor(66, 3, 5, 6);
+    this.addDecor(76, 4, 4, 6);
+    this.addDecor(89, 2, 5, 6);
+    this.addDecor(49, 1, 8, 6);
+
     this.addEnemy(8, 5, 14);
     this.addEnemy(25, 23, 30);
     this.addEnemy(38, 35, 42);
@@ -222,6 +243,19 @@ class Level {
       if (drawX > -TILE && drawX < CANVAS_WIDTH + TILE) {
         ctx.drawImage(
           tilesheet, coinTile.sx, coinTile.sy, coinTile.sw, coinTile.sh,
+          drawX, drawY, TILE, TILE
+        );
+      }
+    }
+  }
+
+  drawDecorations(ctx, tilesheet, camX) {
+    for (const d of this.decorations) {
+      const drawX = Math.round(d.x - camX);
+      const drawY = Math.round(d.y);
+      if (drawX > -TILE && drawX < CANVAS_WIDTH + TILE) {
+        ctx.drawImage(
+          tilesheet, d.frame.sx, d.frame.sy, d.frame.sw, d.frame.sh,
           drawX, drawY, TILE, TILE
         );
       }
